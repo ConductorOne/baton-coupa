@@ -1,0 +1,55 @@
+version: 2
+project_name: baton-coupa
+builds:
+  - binary: baton-coupa
+    env:
+      - CGO_ENABLED=0
+    id: linux
+    main: ./cmd/baton-coupa
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+dockers:
+  - use: buildx
+    goos: linux
+    goarch: amd64
+    image_templates:
+      - "ghcr.io/conductorone/baton-coupa:{{ .Version }}-amd64"
+      - "ghcr.io/conductorone/baton-coupa:latest-amd64"
+    build_flag_templates:
+      - "--platform=linux/amd64"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.title=baton-coupa"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+      - "--label=org.opencontainers.image.source=https://github.com/conductorone/baton-coupa"
+  - use: buildx
+    goos: linux
+    goarch: arm64
+    image_templates:
+      - "ghcr.io/conductorone/baton-coupa:{{ .Version }}-arm64"
+      - "ghcr.io/conductorone/baton-coupa:latest-arm64"
+    build_flag_templates:
+      - "--platform=linux/arm64/v8"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.title=baton-coupa"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+      - "--label=org.opencontainers.image.source=https://github.com/conductorone/baton-coupa"
+docker_manifests:
+  - name_template: ghcr.io/conductorone/baton-coupa:{{ .Version }}
+    image_templates:
+      - ghcr.io/conductorone/baton-coupa:{{ .Version }}-amd64
+      - ghcr.io/conductorone/baton-coupa:{{ .Version }}-arm64
+  - name_template: ghcr.io/conductorone/baton-coupa:latest
+    image_templates:
+      - ghcr.io/conductorone/baton-coupa:latest-amd64
+      - ghcr.io/conductorone/baton-coupa:latest-arm64
+checksum:
+  disable: true
+release:
+  disable: true
+changelog:
+  disable: true
