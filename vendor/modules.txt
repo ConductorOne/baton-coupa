@@ -144,7 +144,7 @@ github.com/aws/smithy-go/waiter
 # github.com/benbjohnson/clock v1.3.5
 ## explicit; go 1.15
 github.com/benbjohnson/clock
-# github.com/conductorone/baton-sdk v0.2.31
+# github.com/conductorone/baton-sdk v0.2.37
 ## explicit; go 1.21
 github.com/conductorone/baton-sdk/internal/connector
 github.com/conductorone/baton-sdk/pb/c1/c1z/v1
@@ -181,6 +181,8 @@ github.com/conductorone/baton-sdk/pkg/tasks/c1api
 github.com/conductorone/baton-sdk/pkg/tasks/local
 github.com/conductorone/baton-sdk/pkg/test
 github.com/conductorone/baton-sdk/pkg/types
+github.com/conductorone/baton-sdk/pkg/types/entitlement
+github.com/conductorone/baton-sdk/pkg/types/grant
 github.com/conductorone/baton-sdk/pkg/types/resource
 github.com/conductorone/baton-sdk/pkg/types/tasks
 github.com/conductorone/baton-sdk/pkg/types/ticket
@@ -432,7 +434,7 @@ golang.org/x/net/http2/hpack
 golang.org/x/net/idna
 golang.org/x/net/internal/timeseries
 golang.org/x/net/trace
-# golang.org/x/oauth2 v0.20.0
+# golang.org/x/oauth2 v0.23.0
 ## explicit; go 1.18
 golang.org/x/oauth2
 golang.org/x/oauth2/clientcredentials
@@ -559,6 +561,7 @@ google.golang.org/protobuf/types/known/anypb
 google.golang.org/protobuf/types/known/durationpb
 google.golang.org/protobuf/types/known/structpb
 google.golang.org/protobuf/types/known/timestamppb
+google.golang.org/protobuf/types/known/wrapperspb
 # gopkg.in/ini.v1 v1.67.0
 ## explicit
 gopkg.in/ini.v1
