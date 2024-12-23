@@ -1,5 +1,9 @@
 package client
 
+type ResourceId struct {
+	Id int `json:"id"`
+}
+
 type Query struct {
 	Query     string            `json:"query"`
 	Variables map[string]string `json:"variables,omitempty"`
@@ -62,4 +66,16 @@ type License struct {
 	Name        string
 	ID          string
 	Description string
+}
+
+type UserRolesResponse struct {
+	Users []struct {
+		Id    int    `json:"id"`
+		Roles []Role `json:"roles"`
+	} `json:"users"`
+}
+
+type UserRolesPutResponse struct {
+	ResourceId
+	Roles []Role `json:"roles"`
 }

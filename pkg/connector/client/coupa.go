@@ -101,7 +101,7 @@ func (c *Client) Query(
 
 	l.Debug("Querying Coupa", zap.String("query", rawQuery))
 
-	return c.doRequest(
+	return c.doGraphQLRequest(
 		ctx,
 		http.MethodPost,
 		c.baseUrl.JoinPath(apiPathQuery),

@@ -47,6 +47,12 @@ const (
 		id
 	}
 }`
+
+	getUserRoles = `query getUsers {
+	users(query: \"id=%d\") { 
+		id roles { id name description }
+	} 
+`
 )
 
 func pagination(pg string) string {
@@ -86,4 +92,8 @@ func RoleGrantQuery(roleID string, pg string) string {
 
 func LicenseGrantQuery(licenseName string, pg string) string {
 	return fmt.Sprintf(getLicenseGrantListQuery, licenseName, appendedPagination(pg))
+}
+
+func GetUserRoles(userId int) string {
+	return fmt.Sprintf(getUserRoles, userId)
 }

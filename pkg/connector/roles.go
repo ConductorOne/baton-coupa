@@ -2,7 +2,9 @@ package connector
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"slices"
 	"strconv"
 
 	"github.com/conductorone/baton-coupa/pkg/connector/client"
@@ -158,6 +160,145 @@ func (o *roleBuilder) Grants(
 	}
 
 	return outputGrants, "", outputAnnotations, nil
+}
+
+func (o *roleBuilder) Grant(ctx context.Context, resource *v2.Resource, entitlement *v2.Entitlement) ([]*v2.Grant, annotations.Annotations, error) {
+	roleIdToAdd, err := strconv.Atoi(entitlement.Resource.Id.Resource)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	userId, err := strconv.Atoi(resource.Id.Resource)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var target client.UserRolesResponse
+	response, _, err := o.client.Query(
+		ctx,
+		client.GetUserRoles(userId),
+		&target,
+	)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer response.Body.Close()
+
+	if len(target.Users) == 0 {
+		return nil, nil, errors.New("baton-coupa: user not found")
+	}
+
+	if len(target.Users) > 1 {
+		return nil, nil, fmt.Errorf("baton-coupa: multiple users found for id %d", userId)
+	}
+
+	user := target.Users[0]
+
+	for _, role := range user.Roles {
+		if role.ID == roleIdToAdd {
+			return []*v2.Grant{}, annotations.New(&v2.GrantAlreadyExists{}), nil
+		}
+	}
+
+	rolesToAdd := make([]int, 0)
+
+	for _, role := range user.Roles {
+		rolesToAdd = append(rolesToAdd, role.ID)
+	}
+
+	rolesToAdd = append(rolesToAdd, roleIdToAdd)
+
+	userResponse, _, err := o.client.SetRoles(ctx, userId, rolesToAdd)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if len(userResponse.Roles) != len(rolesToAdd) {
+		return nil, nil, errors.New("baton-coupa: roles not set")
+	}
+
+	newGrant := grant.NewGrant(
+		resource,
+		roleMemberEntitlementName,
+		&v2.ResourceId{
+			ResourceType: userResourceType.Id,
+			Resource:     strconv.Itoa(user.Id),
+		},
+	)
+
+	return []*v2.Grant{newGrant}, nil, nil
+}
+
+func (o *roleBuilder) Revoke(ctx context.Context, grant *v2.Grant) (annotations.Annotations, error) {
+	l := ctxzap.Extract(ctx)
+
+	if grant.Principal.Id.ResourceType != userResourceType.Id {
+		return nil, fmt.Errorf("baton-coupa: principal resource type is not %s", userResourceType.Id)
+	}
+
+	roleIdToRemove, err := strconv.Atoi(grant.Entitlement.Resource.Id.Resource)
+	if err != nil {
+		return nil, err
+	}
+
+	userId, err := strconv.Atoi(grant.Principal.Id.Resource)
+	if err != nil {
+		return nil, err
+	}
+
+	var target client.UserRolesResponse
+	response, _, err := o.client.Query(
+		ctx,
+		client.GetUserRoles(userId),
+		&target,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer response.Body.Close()
+
+	if len(target.Users) == 0 {
+		return nil, errors.New("baton-coupa: user not found")
+	}
+
+	if len(target.Users) > 1 {
+		return nil, fmt.Errorf("baton-coupa: multiple users found for id %d", userId)
+	}
+
+	user := target.Users[0]
+
+	index := slices.IndexFunc(user.Roles, func(c client.Role) bool {
+		return c.ID == roleIdToRemove
+	})
+	if index < 0 {
+		l.Info(
+			"baton-coupa: scope not found in user",
+		)
+
+		return annotations.New(&v2.GrantAlreadyRevoked{}), nil
+	}
+
+	if index == 0 {
+		user.Roles = user.Roles[1:]
+	} else {
+		user.Roles = append(user.Roles[:index], user.Roles[index+1:]...)
+	}
+
+	newRoles := make([]int, 0)
+	for _, role := range user.Roles {
+		newRoles = append(newRoles, role.ID)
+	}
+
+	userResponse, _, err := o.client.SetRoles(ctx, userId, newRoles)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(userResponse.Roles) != len(newRoles) {
+		return nil, errors.New("baton-coupa: roles was not set")
+	}
+
+	return nil, nil
 }
 
 func newRoleBuilder(ctx context.Context, client *client.Client) *roleBuilder {
