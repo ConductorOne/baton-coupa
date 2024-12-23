@@ -4,7 +4,7 @@ import "fmt"
 
 const (
 	getAllUsersQuery = `query getUsers{
-	users(Query: "%s&type[blank]=true") {
+	users(query: "%s&type[blank]=true") {
 		id
 		email
 		fullname
@@ -13,7 +13,7 @@ const (
 }`
 
 	getGroupsQuery = `query getGroups {
-	userGroups(Query: "%s") {
+	userGroups(query: "%s") {
 		id
 		name
 		description
@@ -21,7 +21,7 @@ const (
 }`
 
 	getGroupMemberListQuery = `query getGroupMembers {
-	userGroups(Query: "id=%s") {
+	userGroups(query: "id=%s") {
 		id
 		users {
 			id
@@ -29,7 +29,7 @@ const (
 	}
 }`
 	getRoleQuery = `query getRoles {
-	roles(Query: "%s") {
+	roles(query: "%s") {
 		id
 		name
 		description
@@ -37,13 +37,13 @@ const (
 }`
 
 	getRoleGrantListQuery = `query getRoleGrants {
-	users(Query: "roles[id]=%s%s") {
+	users(query: "roles[id]=%s%s") {
 		id
 	}
 }`
 
 	getLicenseGrantListQuery = `query getRoleGrants {
-	users(Query: "%s=true%s") {
+	users(query: "%s=true%s") {
 		id
 	}
 }`

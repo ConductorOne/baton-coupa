@@ -1,54 +1,42 @@
 package client
 
 type Query struct {
-	Query     string            `json:"Query"`
+	Query     string            `json:"query"`
 	Variables map[string]string `json:"variables,omitempty"`
 }
 
 type UsersQueryResponse struct {
-	Data struct {
-		Users []*User `json:"users"`
-	} `json:"data"`
+	Users []*User `json:"users"`
 }
 
 type GroupsQueryResponse struct {
-	Data struct {
-		UserGroups []*Group `json:"userGroups"`
-	} `json:"data"`
+	UserGroups []*Group `json:"userGroups"`
 }
 
 type RolesQueryResponse struct {
-	Data struct {
-		Roles []*Role `json:"roles"`
-	} `json:"data"`
+	Roles []*Role `json:"roles"`
 }
 
 type GroupMembersQueryResponse struct {
-	Data struct {
-		UserGroups []struct {
-			Id    int    `json:"id"`
-			Name  string `json:"name"`
-			Users []struct {
-				Id int `json:"id"`
-			} `json:"users"`
-		} `json:"userGroups"`
-	} `json:"data"`
+	UserGroups []struct {
+		Id    int    `json:"id"`
+		Name  string `json:"name"`
+		Users []struct {
+			Id int `json:"id"`
+		} `json:"users"`
+	} `json:"userGroups"`
 }
 
 type RoleGrantsQueryResponse struct {
-	Data struct {
-		Users []struct {
-			Id int `json:"id"`
-		} `json:"users"`
-	} `json:"data"`
+	Users []struct {
+		Id int `json:"id"`
+	} `json:"users"`
 }
 
 type LicenseGrantsQueryResponse struct {
-	Data struct {
-		Users []struct {
-			Id int `json:"id"`
-		} `json:"users"`
-	} `json:"data"`
+	Users []struct {
+		Id int `json:"id"`
+	} `json:"users"`
 }
 
 type User struct {

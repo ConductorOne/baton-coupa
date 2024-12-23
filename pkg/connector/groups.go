@@ -3,6 +3,7 @@ package connector
 import (
 	"context"
 	"fmt"
+	"github.com/conductorone/baton-sdk/pkg/types/grant"
 	"strconv"
 
 	"github.com/conductorone/baton-coupa/pkg/connector/client"
@@ -10,7 +11,6 @@ import (
 	"github.com/conductorone/baton-sdk/pkg/annotations"
 	"github.com/conductorone/baton-sdk/pkg/pagination"
 	"github.com/conductorone/baton-sdk/pkg/types/entitlement"
-	"github.com/conductorone/baton-sdk/pkg/types/grant"
 	resourceSdk "github.com/conductorone/baton-sdk/pkg/types/resource"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
 	"go.uber.org/zap"
@@ -71,7 +71,7 @@ func (o *groupBuilder) List(
 	defer response.Body.Close()
 
 	lastId := ""
-	for _, group := range target.Data.UserGroups {
+	for _, group := range target.UserGroups {
 		resource, err := groupResource(group, parentResourceID)
 		if err != nil {
 			return nil, "", nil, err
@@ -143,23 +143,21 @@ func (o *groupBuilder) Grants(
 	defer response.Body.Close()
 
 	// Every group must have _one_ user group.
-	userGroups := target.Data.UserGroups
+	userGroups := target.UserGroups
 	if len(userGroups) != 0 {
-		return nil, "", nil, fmt.Errorf("coupa-client: error getting group memberships - unexpected group length: %d", len(userGroups))
-	}
-
-	for _, membership := range userGroups[0].Users {
-		outputGrants = append(
-			outputGrants,
-			grant.NewGrant(
-				resource,
-				groupMemberEntitlementName,
-				&v2.ResourceId{
-					ResourceType: userResourceType.Id,
-					Resource:     strconv.Itoa(membership.Id),
-				},
-			),
-		)
+		for _, membership := range userGroups[0].Users {
+			outputGrants = append(
+				outputGrants,
+				grant.NewGrant(
+					resource,
+					groupMemberEntitlementName,
+					&v2.ResourceId{
+						ResourceType: userResourceType.Id,
+						Resource:     strconv.Itoa(membership.Id),
+					},
+				),
+			)
+		}
 	}
 
 	return outputGrants, "", outputAnnotations, nil

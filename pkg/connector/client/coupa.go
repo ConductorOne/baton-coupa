@@ -2,6 +2,8 @@ package client
 
 import (
 	"context"
+	"encoding/json"
+	"go.uber.org/zap"
 	"net/http"
 	"net/url"
 
@@ -11,6 +13,13 @@ import (
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
 	"golang.org/x/oauth2"
 )
+
+type innerGraphqlResponse struct {
+	Data   *json.RawMessage `json:"data,omitempty"`
+	Errors []struct {
+		Message string `json:"message,omitempty"`
+	} `json:"errors"`
+}
 
 type Client struct {
 	baseUrl              *url.URL
@@ -86,6 +95,10 @@ func (c *Client) Query(
 	if err != nil {
 		return nil, nil, err
 	}
+
+	l := ctxzap.Extract(ctx)
+
+	l.Debug("Querying Coupa", zap.String("query", rawQuery))
 
 	return c.doRequest(
 		ctx,

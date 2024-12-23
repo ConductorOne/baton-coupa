@@ -71,7 +71,7 @@ func (o *roleBuilder) List(
 	defer response.Body.Close()
 
 	lastId := ""
-	for _, role := range target.Data.Roles {
+	for _, role := range target.Roles {
 		resource, err := roleResource(role, parentResourceID)
 		if err != nil {
 			return nil, "", nil, err
@@ -143,7 +143,7 @@ func (o *roleBuilder) Grants(
 	}
 	defer response.Body.Close()
 
-	for _, user := range target.Data.Users {
+	for _, user := range target.Users {
 		outputGrants = append(
 			outputGrants,
 			grant.NewGrant(

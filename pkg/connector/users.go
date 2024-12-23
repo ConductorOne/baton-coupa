@@ -67,19 +67,21 @@ func (o *userBuilder) List(
 	var outputAnnotations annotations.Annotations
 
 	var target client.UsersQueryResponse
-	response, ratelimitData, err := o.client.Query(
+	response, rateLimitData, err := o.client.Query(
 		ctx,
 		client.AllUsersQuery(pToken.Token),
 		&target,
 	)
-	outputAnnotations.WithRateLimiting(ratelimitData)
+	outputAnnotations.WithRateLimiting(rateLimitData)
 	if err != nil {
 		return nil, "", outputAnnotations, err
 	}
 	defer response.Body.Close()
 
+	logger.Debug("Users List Response", zap.Any("response", target))
+
 	lastId := ""
-	for _, user := range target.Data.Users {
+	for _, user := range target.Users {
 		resource, err := userResource(user, parentResourceID)
 		if err != nil {
 			return nil, "", nil, err

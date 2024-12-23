@@ -187,7 +187,7 @@ func (o *licenseBuilder) Grants(
 	defer response.Body.Close()
 
 	lastId := ""
-	for _, user := range target.Data.Users {
+	for _, user := range target.Users {
 		userId := strconv.Itoa(user.Id)
 		outputGrants = append(
 			outputGrants,

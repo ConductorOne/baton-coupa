@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	config2 "github.com/conductorone/baton-coupa/pkg/config"
+	coppaConfig "github.com/conductorone/baton-coupa/pkg/config"
 	"github.com/conductorone/baton-coupa/pkg/connector"
 	"github.com/conductorone/baton-sdk/pkg/config"
 	"github.com/conductorone/baton-sdk/pkg/connectorbuilder"
@@ -27,7 +27,7 @@ func main() {
 		ctx,
 		connectorName,
 		getConnector,
-		config2.ConfigurationSchema,
+		coppaConfig.ConfigurationSchema,
 	)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err.Error())
@@ -45,15 +45,15 @@ func main() {
 
 func getConnector(ctx context.Context, v *viper.Viper) (types.ConnectorServer, error) {
 	l := ctxzap.Extract(ctx)
-	if err := config2.ValidateConfig(v); err != nil {
+	if err := coppaConfig.ValidateConfig(v); err != nil {
 		return nil, err
 	}
 
 	cb, err := connector.New(
 		ctx,
-		v.GetString(config2.InstanceUrlField.FieldName),
-		v.GetString(config2.ClientIdField.FieldName),
-		v.GetString(config2.ClientSecretField.FieldName),
+		v.GetString(coppaConfig.CoupaDomain.FieldName),
+		v.GetString(coppaConfig.ClientIdField.FieldName),
+		v.GetString(coppaConfig.ClientSecretField.FieldName),
 	)
 	if err != nil {
 		l.Error("error creating connector", zap.Error(err))

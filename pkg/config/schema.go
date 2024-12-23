@@ -18,17 +18,17 @@ var (
 		"coupahost.com",
 	}
 	ClientIdField = field.StringField(
-		"client-id",
+		"coupa-client-id",
 		field.WithRequired(true),
 		field.WithDescription("Your Coupa Client ID"),
 	)
 	ClientSecretField = field.StringField(
-		"client-secret",
+		"coupa-client-secret",
 		field.WithRequired(true),
 		field.WithDescription("Your Coupa Client Secret"),
 	)
-	InstanceUrlField = field.StringField(
-		"instance-url",
+	CoupaDomain = field.StringField(
+		"coupa-domain",
 		field.WithRequired(true),
 		field.WithDescription("Your Coupa Domain, ex: acme.coupacloud.com"),
 	)
@@ -38,7 +38,7 @@ var (
 	ConfigurationFields = []field.SchemaField{
 		ClientIdField,
 		ClientSecretField,
-		InstanceUrlField,
+		CoupaDomain,
 	}
 
 	ConfigurationSchema = field.Configuration{
@@ -95,7 +95,7 @@ func NormalizeCoupaURL(domain string) (string, error) {
 		return "", errCoupaDomainNotMatched
 	}
 
-	rv := strings.Join([]string{tenantDomain, coupaDomain}, ".")
+	rv := "https://" + strings.Join([]string{tenantDomain, coupaDomain}, ".")
 	return rv, nil
 }
 
@@ -104,6 +104,6 @@ func NormalizeCoupaURL(domain string) (string, error) {
 // needs to perform extra validations that cannot be encoded with configuration
 // parameters.
 func ValidateConfig(v *viper.Viper) error {
-	_, err := NormalizeCoupaURL(v.GetString(InstanceUrlField.FieldName))
+	_, err := NormalizeCoupaURL(v.GetString(CoupaDomain.FieldName))
 	return err
 }

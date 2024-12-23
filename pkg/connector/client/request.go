@@ -3,7 +3,10 @@ package client
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
+	"go.uber.org/zap"
 	"io"
 	"net/http"
 	"net/url"
@@ -28,6 +31,8 @@ func (c *Client) doRequest(
 	*v2.RateLimitDescription,
 	error,
 ) {
+	l := ctxzap.Extract(ctx)
+
 	options := []uhttp.RequestOption{
 		uhttp.WithAcceptJSONHeader(),
 		WithBearerToken(c.bearerToken),
@@ -55,8 +60,23 @@ func (c *Client) doRequest(
 		return nil, &ratelimitData, err
 	}
 
-	if err := json.Unmarshal(bodyBytes, &target); err != nil {
+	var innerResponse innerGraphqlResponse
+
+	if err := json.Unmarshal(bodyBytes, &innerResponse); err != nil {
+		l.Error("Failed to unmarshal response body", zap.Error(err))
 		return nil, nil, err
+	}
+
+	if innerResponse.Errors != nil && len(innerResponse.Errors) > 0 {
+		l.Error("Received errors from the server", zap.Any("errors", innerResponse.Errors))
+		return nil, nil, errors.New(innerResponse.Errors[0].Message)
+	}
+
+	if innerResponse.Data != nil {
+		if err := json.Unmarshal(*innerResponse.Data, target); err != nil {
+			l.Error("Failed to unmarshal response data", zap.Error(err))
+			return nil, nil, err
+		}
 	}
 
 	return response, &ratelimitData, nil
