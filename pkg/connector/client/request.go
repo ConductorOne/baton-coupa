@@ -5,11 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
-	"go.uber.org/zap"
 	"io"
 	"net/http"
 	"net/url"
+
+	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
+	"go.uber.org/zap"
 
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
 	"github.com/conductorone/baton-sdk/pkg/uhttp"
@@ -67,7 +68,7 @@ func (c *Client) doRequest(
 		return nil, nil, err
 	}
 
-	if innerResponse.Errors != nil && len(innerResponse.Errors) > 0 {
+	if len(innerResponse.Errors) > 0 {
 		l.Error("Received errors from the server", zap.Any("errors", innerResponse.Errors))
 		return nil, nil, errors.New(innerResponse.Errors[0].Message)
 	}

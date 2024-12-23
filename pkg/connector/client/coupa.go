@@ -3,9 +3,10 @@ package client
 import (
 	"context"
 	"encoding/json"
-	"go.uber.org/zap"
 	"net/http"
 	"net/url"
+
+	"go.uber.org/zap"
 
 	"github.com/conductorone/baton-coupa/pkg/config"
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
