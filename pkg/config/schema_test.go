@@ -18,9 +18,9 @@ func TestConfigs(t *testing.T) {
 			Message: "bad url",
 			IsValid: false,
 			Configs: map[string]string{
-				"client-id":     "1",
-				"client-secret": "1",
-				"instance-url":  "1",
+				"coupa-client-id":     "1",
+				"coupa-client-secret": "1",
+				"coupa-domain":        "1",
 			},
 		},
 
@@ -28,9 +28,9 @@ func TestConfigs(t *testing.T) {
 			Message: "all",
 			IsValid: true,
 			Configs: map[string]string{
-				"client-id":     "1",
-				"client-secret": "1",
-				"instance-url":  "https://example.coupacloud.com",
+				"coupa-client-id":     "1",
+				"coupa-client-secret": "1",
+				"coupa-domain":        "https://example.coupacloud.com",
 			},
 		},
 	}
@@ -47,11 +47,11 @@ func TestNormalizeCoupaURL(t *testing.T) {
 		{
 			message:  "with scheme",
 			url:      "https://www.coupacloud.com",
-			expected: "www.coupacloud.com",
+			expected: "https://www.coupacloud.com",
 		}, {
 			message:  "without scheme",
 			url:      "www.coupacloud.com",
-			expected: "www.coupacloud.com",
+			expected: "https://www.coupacloud.com",
 		},
 	}
 	for _, testCase := range testCases {

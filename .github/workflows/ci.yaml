@@ -38,11 +38,14 @@ jobs:
           test-results: test.json
 
   test-provisioning:
+    needs:
+      - go-lint
+      - go-test
     runs-on: ubuntu-latest
     strategy:
       fail-fast: true
       matrix:
-        ci_index: [ roles, groups, licenses ]
+        test-case: [ roles, groups, licenses ]
 
     env:
       BATON_LOG_LEVEL: debug
@@ -62,6 +65,8 @@ jobs:
           go-version: 1.22.x
       - name: Checkout code
         uses: actions/checkout@v4
+      - name: Install baton
+        run: ./scripts/get-baton.sh && mv baton /usr/local/bin
       - name: Build baton-coupa
         run: go build ./cmd/baton-coupa
       - name: Run tests for ${{ matrix.test-case }}
@@ -74,6 +79,6 @@ jobs:
               ./scripts/validate-grant.sh ${{ env.CONNECTOR_PRINCIPAL }} user group:2:member group:2:member:user:${{ env.CONNECTOR_PRINCIPAL }}
               ;;
             "licenses")
-              ./scripts/validate-grant.sh ${{ env.CONNECTOR_PRINCIPAL }} user license:treasury_user license:treasury_user:assigned:user:${{ env.CONNECTOR_PRINCIPAL }}
+              ./scripts/validate-grant.sh ${{ env.CONNECTOR_PRINCIPAL }} user license:treasury_user:assigned license:treasury_user:assigned:user:${{ env.CONNECTOR_PRINCIPAL }}
               ;;
           esac
