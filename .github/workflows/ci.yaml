@@ -37,7 +37,7 @@ jobs:
         with:
           test-results: test.json
 
-  test:
+  test-provisioning:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: true
@@ -66,7 +66,7 @@ jobs:
         run: go build ./cmd/baton-coupa
       - name: Run tests for ${{ matrix.test-case }}
         run: |
-          case ${{ matrix.test-case }} in
+          case "${{ matrix.test-case }}" in
             "roles")
               ./scripts/validate-grant.sh ${{ env.CONNECTOR_PRINCIPAL }} user role:4:member role:4:member:user:${{ env.CONNECTOR_PRINCIPAL }}
               ;;
