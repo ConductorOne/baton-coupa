@@ -2,7 +2,9 @@ package connector
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"slices"
 	"strconv"
 
 	"github.com/conductorone/baton-sdk/pkg/types/grant"
@@ -162,6 +164,152 @@ func (o *groupBuilder) Grants(
 	}
 
 	return outputGrants, "", outputAnnotations, nil
+}
+
+func (o *groupBuilder) Grant(ctx context.Context, resource *v2.Resource, entitlement *v2.Entitlement) ([]*v2.Grant, annotations.Annotations, error) {
+	l := ctxzap.Extract(ctx)
+
+	groupIdToAdd, err := strconv.Atoi(entitlement.Resource.Id.Resource)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	userId, err := strconv.Atoi(resource.Id.Resource)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	user, err := o.getUserGroupsResponse(ctx, userId)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	for _, group := range user.Group {
+		if group.ID == groupIdToAdd {
+			return []*v2.Grant{}, annotations.New(&v2.GrantAlreadyExists{}), nil
+		}
+	}
+
+	newGroupIDs := make([]int, 0)
+
+	for _, group := range user.Group {
+		newGroupIDs = append(newGroupIDs, group.ID)
+	}
+
+	newGroupIDs = append(newGroupIDs, groupIdToAdd)
+
+	groups, _, err := o.client.SetUserGroups(ctx, userId, newGroupIDs)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if len(groups.Group) != len(newGroupIDs) {
+		l.Debug(
+			"baton-coupa: group not added to user",
+			zap.Any("response", groups.Group),
+		)
+		return nil, nil, errors.New("baton-coupa: failed to add group to user")
+	}
+
+	newGrant := grant.NewGrant(
+		resource,
+		groupMemberEntitlementName,
+		&v2.ResourceId{
+			ResourceType: userResourceType.Id,
+			Resource:     strconv.Itoa(userId),
+		},
+	)
+
+	return []*v2.Grant{newGrant}, nil, nil
+}
+
+func (o *groupBuilder) Revoke(ctx context.Context, grant *v2.Grant) (annotations.Annotations, error) {
+	l := ctxzap.Extract(ctx)
+
+	if grant.Principal.Id.ResourceType != userResourceType.Id {
+		return nil, fmt.Errorf("baton-coupa: principal resource type is not %s", userResourceType.Id)
+	}
+
+	groupIdToRemove, err := strconv.Atoi(grant.Entitlement.Resource.Id.Resource)
+	if err != nil {
+		return nil, err
+	}
+
+	userId, err := strconv.Atoi(grant.Principal.Id.Resource)
+	if err != nil {
+		return nil, err
+	}
+
+	user, err := o.getUserGroupsResponse(ctx, userId)
+	if err != nil {
+		return nil, err
+	}
+
+	index := slices.IndexFunc(user.Group, func(c client.Group) bool {
+		return c.ID == groupIdToRemove
+	})
+	if index < 0 {
+		l.Info(
+			"baton-coupa: group not found in user",
+		)
+
+		return annotations.New(&v2.GrantAlreadyRevoked{}), nil
+	}
+
+	if index == 0 {
+		user.Group = user.Group[1:]
+	} else {
+		user.Group = append(user.Group[:index], user.Group[index+1:]...)
+	}
+
+	newGroups := make([]int, 0)
+	for _, group := range user.Group {
+		newGroups = append(newGroups, group.ID)
+	}
+
+	_, _, err = o.client.SetUserGroups(ctx, userId, make([]int, 0))
+	if err != nil {
+		return nil, err
+	}
+
+	userResponse, _, err := o.client.SetUserGroups(ctx, userId, newGroups)
+	if err != nil {
+		l.Error(
+			"baton-coupa: error setting groups",
+			zap.Error(err),
+			zap.Ints("groups", newGroups),
+		)
+		return nil, err
+	}
+
+	if len(userResponse.Group) != len(newGroups) {
+		return nil, errors.New("baton-coupa: group was not removed")
+	}
+
+	return nil, nil
+}
+
+func (o *groupBuilder) getUserGroupsResponse(ctx context.Context, userId int) (*client.UserGroups, error) {
+	var target client.UserGroupsResponse
+	response, _, err := o.client.Query(
+		ctx,
+		client.GetUserGroups(userId),
+		&target,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer response.Body.Close()
+
+	if len(target.Users) == 0 {
+		return nil, errors.New("baton-coupa: user not found")
+	}
+
+	if len(target.Users) > 1 {
+		return nil, fmt.Errorf("baton-coupa: multiple users found for id %d", userId)
+	}
+
+	return &target.Users[0], nil
 }
 
 func newGroupBuilder(ctx context.Context, client *client.Client) *groupBuilder {

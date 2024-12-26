@@ -68,14 +68,47 @@ type License struct {
 	Description string
 }
 
+type UserRoles struct {
+	Id    int    `json:"id"`
+	Roles []Role `json:"roles"`
+}
+
 type UserRolesResponse struct {
-	Users []struct {
-		Id    int    `json:"id"`
-		Roles []Role `json:"roles"`
-	} `json:"users"`
+	Users []UserRoles `json:"users"`
+}
+
+type UserGroups struct {
+	Id    int     `json:"id"`
+	Group []Group `json:"userGroups"`
+}
+
+type UserGroupsResponse struct {
+	Users []UserGroups `json:"users"`
+}
+
+type UserGroupsApiResponse struct {
+	Id    int     `json:"id"`
+	Group []Group `json:"user-groups"`
 }
 
 type UserRolesPutResponse struct {
 	ResourceId
 	Roles []Role `json:"roles"`
+}
+
+type UserLicenseResponse struct {
+	Id              int  `json:"id"`
+	RiskAssessUser  bool `json:"risk-assess-user"`
+	AicUser         bool `json:"aic-user"`
+	PurchasingUser  bool `json:"purchasing-user"`
+	ExpenseUser     bool `json:"expense-user"`
+	SourcingUser    bool `json:"sourcing-user"`
+	InventoryUser   bool `json:"inventory-user"`
+	ContractsUser   bool `json:"contracts-user"`
+	AnalyticsUser   bool `json:"analytics-user"`
+	SpendGuardUser  bool `json:"spend-guard-user"`
+	CcwUser         bool `json:"ccw-user"`
+	SupplyChainUser bool `json:"supply-chain-user"`
+	TravelUser      bool `json:"travel-user"`
+	TreasuryUser    bool `json:"treasury-user"`
 }

@@ -49,9 +49,17 @@ const (
 }`
 
 	getUserRoles = `query getUsers {
-	users(query: \"id=%d\") { 
+	users(query: "id=%d") { 
 		id roles { id name description }
 	} 
+}
+`
+
+	getUserGroups = `query getUsers {
+	users(query: "id=%d") { 
+		id userGroups { id name description }
+	}
+}
 `
 )
 
@@ -96,4 +104,8 @@ func LicenseGrantQuery(licenseName string, pg string) string {
 
 func GetUserRoles(userId int) string {
 	return fmt.Sprintf(getUserRoles, userId)
+}
+
+func GetUserGroups(userId int) string {
+	return fmt.Sprintf(getUserGroups, userId)
 }

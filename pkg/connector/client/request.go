@@ -36,7 +36,7 @@ func (c *Client) doGraphQLRequest(
 
 	options := []uhttp.RequestOption{
 		uhttp.WithAcceptJSONHeader(),
-		WithBearerToken(c.bearerToken),
+		WithBearerToken(c.readOnlyToken),
 	}
 	if payload != nil {
 		options = append(options, uhttp.WithJSONBody(payload))
@@ -100,7 +100,7 @@ func (c *Client) doRestRequest(
 
 	options := []uhttp.RequestOption{
 		uhttp.WithAcceptJSONHeader(),
-		WithBearerToken(c.bearerToken),
+		WithBearerToken(c.readWriteToken),
 	}
 	if payload != nil {
 		options = append(options, uhttp.WithJSONBody(payload))

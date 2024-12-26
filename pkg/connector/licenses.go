@@ -64,6 +64,7 @@ func (o *licenseBuilder) List(
 			Description: "A Contingent Workforce license",
 		},
 		{
+			// This does not revoke
 			Name:        "Contracts",
 			ID:          "contracts-user",
 			Description: "A Contracts license",
@@ -79,6 +80,7 @@ func (o *licenseBuilder) List(
 			Description: "An Inventory license",
 		},
 		{
+			// This does not revoke
 			Name:        "Purchasing",
 			ID:          "purchasing-user",
 			Description: "A Purchasing license",
@@ -204,6 +206,51 @@ func (o *licenseBuilder) Grants(
 	}
 
 	return outputGrants, lastId, outputAnnotations, nil
+}
+
+func (o *licenseBuilder) Grant(ctx context.Context, resource *v2.Resource, entitlement *v2.Entitlement) ([]*v2.Grant, annotations.Annotations, error) {
+	licenseIdToAdd := entitlement.Resource.Id.Resource
+
+	userId, err := strconv.Atoi(resource.Id.Resource)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	_, err = o.client.SetLicense(ctx, userId, licenseIdToAdd, true)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	newGrant := grant.NewGrant(
+		resource,
+		licenseEntitlementName,
+		&v2.ResourceId{
+			ResourceType: userResourceType.Id,
+			Resource:     resource.Id.Resource,
+		},
+	)
+
+	return []*v2.Grant{newGrant}, nil, nil
+}
+
+func (o *licenseBuilder) Revoke(ctx context.Context, grant *v2.Grant) (annotations.Annotations, error) {
+	if grant.Principal.Id.ResourceType != userResourceType.Id {
+		return nil, fmt.Errorf("baton-coupa: principal resource type is not %s", userResourceType.Id)
+	}
+
+	licenseIdToRemove := grant.Entitlement.Resource.Id.Resource
+
+	userId, err := strconv.Atoi(grant.Principal.Id.Resource)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = o.client.SetLicense(ctx, userId, licenseIdToRemove, false)
+	if err != nil {
+		return nil, err
+	}
+
+	return nil, nil
 }
 
 func newLicenseBuilder(ctx context.Context, client *client.Client) *licenseBuilder {

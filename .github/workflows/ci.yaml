@@ -18,8 +18,8 @@ jobs:
   go-test:
     strategy:
       matrix:
-        go-version: [1.22.x]
-        platform: [ubuntu-latest]
+        go-version: [ 1.22.x ]
+        platform: [ ubuntu-latest ]
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Install Go
@@ -39,25 +39,22 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
-    # Define any services needed for the test suite (or delete this section)
-    # services:
-    #   postgres:
-    #     image: postgres:16
-    #     ports:
-    #       - "5432:5432"
-    #     env:
-    #       POSTGRES_PASSWORD: secretpassword
+    strategy:
+      fail-fast: true
+      matrix:
+        ci_index: [ roles, groups, licenses ]
+
     env:
       BATON_LOG_LEVEL: debug
-      # Add any environment variables needed to run baton-coupa
-      # BATON_BASE_URL: 'http://localhost:8080'
-      # BATON_ACCESS_TOKEN: 'secret_token'
-      # The following parameters are passed to grant/revoke commands
-      # Change these to the correct IDs for your test data
-      CONNECTOR_GRANT: 'grant:entitlement:group:1234:member:user:9876'
-      CONNECTOR_ENTITLEMENT: 'entitlement:group:1234:member'
-      CONNECTOR_PRINCIPAL: 'user:9876'
-      CONNECTOR_PRINCIPAL_TYPE: 'user'
+
+      CONNECTOR_PRINCIPAL: "${{ secrets.CONNECTOR_PRINCIPAL }}"
+
+      BATON_COUPA_CLIENT_ID: "${{ secrets.BATON_COUPA_CLIENT_ID }}"
+      BATON_COUPA_CLIENT_SECRET: "${{ secrets.BATON_COUPA_CLIENT_SECRET }}"
+      BATON_COUPA_DOMAIN: "${{ secrets.BATON_COUPA_DOMAIN }}"
+
+      BATON_CONNECTOR: ./baton-coupa
+
     steps:
       - name: Install Go
         uses: actions/setup-go@v5
@@ -65,40 +62,18 @@ jobs:
           go-version: 1.22.x
       - name: Checkout code
         uses: actions/checkout@v4
-      # Install any dependencies here (or delete this)
-      # - name: Install postgres client
-      #   run: sudo apt install postgresql-client
-      # Run any fixture setup here (or delete this)
-      # - name: Import sql into postgres
-      #   run: psql -h localhost --user postgres -f environment.sql
-      #   env:
-      #     PGPASSWORD: secretpassword
       - name: Build baton-coupa
         run: go build ./cmd/baton-coupa
-      - name: Run baton-coupa
-        run: ./baton-coupa
-
-      - name: Install baton
-        run: ./scripts/get-baton.sh && mv baton /usr/local/bin
-
-      - name: Check for grant before revoking
-
-        run:
-          baton grants --entitlement="${{ env.CONNECTOR_ENTITLEMENT }}" --output-format=json | jq --exit-status ".grants[].principal.id.resource == \"${{ env.CONNECTOR_PRINCIPAL }}\""
-
-
-      - name: Revoke grants
-        run: ./baton-coupa --revoke-grant="${{ env.CONNECTOR_GRANT }}"
-
-      - name: Check grant was revoked
-        run: ./baton-coupa && baton grants --entitlement="${{ env.CONNECTOR_ENTITLEMENT }}" --output-format=json | jq --exit-status "if .grants then .grants[]?.principal.id.resource != \"${{ env.CONNECTOR_PRINCIPAL }}\" else . end"
-
-      - name: Grant entitlement
-        # Change the grant arguments to the correct IDs for your test data
-        run: ./baton-coupa --grant-entitlement="${{ env.CONNECTOR_ENTITLEMENT }}" --grant-principal="${{ env.CONNECTOR_PRINCIPAL }}" --grant-principal-type="${{ env.CONNECTOR_PRINCIPAL_TYPE }}"
-
-      - name: Check grant was re-granted
-
-        run:
-          baton grants --entitlement="${{ env.CONNECTOR_ENTITLEMENT }}" --output-format=json | jq --exit-status ".grants[].principal.id.resource == \"${{ env.CONNECTOR_PRINCIPAL }}\""
-
+      - name: Run tests for ${{ matrix.test-case }}
+        run: |
+          case ${{ matrix.test-case }} in
+            "roles")
+              ./scripts/validate-grant.sh ${{ env.CONNECTOR_PRINCIPAL }} user role:4:member role:4:member:user:${{ env.CONNECTOR_PRINCIPAL }}
+              ;;
+            "groups")
+              ./scripts/validate-grant.sh ${{ env.CONNECTOR_PRINCIPAL }} user group:2:member group:2:member:user:${{ env.CONNECTOR_PRINCIPAL }}
+              ;;
+            "licenses")
+              ./scripts/validate-grant.sh ${{ env.CONNECTOR_PRINCIPAL }} user license:treasury_user license:treasury_user:assigned:user:${{ env.CONNECTOR_PRINCIPAL }}
+              ;;
+          esac

@@ -173,26 +173,10 @@ func (o *roleBuilder) Grant(ctx context.Context, resource *v2.Resource, entitlem
 		return nil, nil, err
 	}
 
-	var target client.UserRolesResponse
-	response, _, err := o.client.Query(
-		ctx,
-		client.GetUserRoles(userId),
-		&target,
-	)
+	user, err := o.getUserRoles(ctx, userId)
 	if err != nil {
 		return nil, nil, err
 	}
-	defer response.Body.Close()
-
-	if len(target.Users) == 0 {
-		return nil, nil, errors.New("baton-coupa: user not found")
-	}
-
-	if len(target.Users) > 1 {
-		return nil, nil, fmt.Errorf("baton-coupa: multiple users found for id %d", userId)
-	}
-
-	user := target.Users[0]
 
 	for _, role := range user.Roles {
 		if role.ID == roleIdToAdd {
@@ -246,6 +230,59 @@ func (o *roleBuilder) Revoke(ctx context.Context, grant *v2.Grant) (annotations.
 		return nil, err
 	}
 
+	user, err := o.getUserRoles(ctx, userId)
+	if err != nil {
+		return nil, err
+	}
+
+	index := slices.IndexFunc(user.Roles, func(c client.Role) bool {
+		return c.ID == roleIdToRemove
+	})
+	if index < 0 {
+		l.Info(
+			"baton-coupa: role not found in user",
+		)
+
+		return annotations.New(&v2.GrantAlreadyRevoked{}), nil
+	}
+
+	if index == 0 {
+		user.Roles = user.Roles[1:]
+	} else {
+		user.Roles = append(user.Roles[:index], user.Roles[index+1:]...)
+	}
+
+	newRoles := make([]int, 0)
+	for _, role := range user.Roles {
+		newRoles = append(newRoles, role.ID)
+	}
+
+	// Clear all roles
+	// Removing a role is a two-step process where you first remove all the roles from the user and then put back the desired roles
+	// https://compass.coupa.com/en-us/products/core-platform/integration-playbooks-and-resources/other-integration-playbooks/erp-integration-adapters/integration-scenarios/1.-user-integration-scenarios-(optional)/1.7-remove-a-role-from-a-user
+	_, _, err = o.client.SetRoles(ctx, userId, make([]int, 0))
+	if err != nil {
+		return nil, err
+	}
+
+	userResponse, _, err := o.client.SetRoles(ctx, userId, newRoles)
+	if err != nil {
+		l.Error(
+			"baton-coupa: error setting roles",
+			zap.Error(err),
+			zap.Ints("roles", newRoles),
+		)
+		return nil, err
+	}
+
+	if len(userResponse.Roles) != len(newRoles) {
+		return nil, errors.New("baton-coupa: roles was not removed")
+	}
+
+	return nil, nil
+}
+
+func (o *roleBuilder) getUserRoles(ctx context.Context, userId int) (*client.UserRoles, error) {
 	var target client.UserRolesResponse
 	response, _, err := o.client.Query(
 		ctx,
@@ -265,40 +302,7 @@ func (o *roleBuilder) Revoke(ctx context.Context, grant *v2.Grant) (annotations.
 		return nil, fmt.Errorf("baton-coupa: multiple users found for id %d", userId)
 	}
 
-	user := target.Users[0]
-
-	index := slices.IndexFunc(user.Roles, func(c client.Role) bool {
-		return c.ID == roleIdToRemove
-	})
-	if index < 0 {
-		l.Info(
-			"baton-coupa: scope not found in user",
-		)
-
-		return annotations.New(&v2.GrantAlreadyRevoked{}), nil
-	}
-
-	if index == 0 {
-		user.Roles = user.Roles[1:]
-	} else {
-		user.Roles = append(user.Roles[:index], user.Roles[index+1:]...)
-	}
-
-	newRoles := make([]int, 0)
-	for _, role := range user.Roles {
-		newRoles = append(newRoles, role.ID)
-	}
-
-	userResponse, _, err := o.client.SetRoles(ctx, userId, newRoles)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(userResponse.Roles) != len(newRoles) {
-		return nil, errors.New("baton-coupa: roles was not set")
-	}
-
-	return nil, nil
+	return &target.Users[0], nil
 }
 
 func newRoleBuilder(ctx context.Context, client *client.Client) *roleBuilder {

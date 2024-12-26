@@ -8,14 +8,14 @@ import (
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
 )
 
-// SetRoles sets the roles for a user.
+// SetUserGroups sets the roles for a user.
 // https://compass.coupa.com/en-us/products/product-documentation/integration-technical-documentation/the-coupa-core-api/resources/reference-data-resources/users-api-(users)
-func (c *Client) SetRoles(
+func (c *Client) SetUserGroups(
 	ctx context.Context,
 	userId int,
-	roleNames []int,
+	groupIDs []int,
 ) (
-	*UserRolesPutResponse,
+	*UserGroupsApiResponse,
 	*v2.RateLimitDescription,
 	error,
 ) {
@@ -25,25 +25,23 @@ func (c *Client) SetRoles(
 	}
 
 	request := struct {
-		Roles []ResourceId `json:"roles"`
+		UserGroups []ResourceId `json:"user-groups"`
 	}{}
 
-	if len(roleNames) == 0 {
-		request.Roles = nil
+	if len(groupIDs) == 0 {
+		request.UserGroups = nil
 	} else {
-		for _, role := range roleNames {
-			request.Roles = append(request.Roles, struct {
-				Id int `json:"id"`
-			}{Id: role})
+		for _, groupId := range groupIDs {
+			request.UserGroups = append(request.UserGroups, ResourceId{Id: groupId})
 		}
 	}
 
-	var userResponse UserRolesPutResponse
+	var userResponse UserGroupsApiResponse
 
 	resonse, rateLimit, err := c.doRestRequest(
 		ctx,
 		http.MethodPut,
-		c.baseUrl.JoinPath(fmt.Sprintf(setRolesPath, userId)),
+		c.baseUrl.JoinPath(fmt.Sprintf(setGroupPath, userId)),
 		request,
 		&userResponse,
 	)
@@ -51,7 +49,6 @@ func (c *Client) SetRoles(
 	if err != nil {
 		return nil, rateLimit, err
 	}
-
 	defer resonse.Body.Close()
 
 	return &userResponse, rateLimit, nil

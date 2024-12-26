@@ -24,10 +24,11 @@ type innerGraphqlResponse struct {
 
 type Client struct {
 	baseUrl              *url.URL
-	bearerToken          string
+	readOnlyToken        string
+	readWriteToken       string
 	initialized          bool
 	ReadOnlyTokenSource  oauth2.TokenSource
-	readWriteTokenSource oauth2.TokenSource // TODO(marcos): this is unused.
+	readWriteTokenSource oauth2.TokenSource
 	wrapper              *uhttp.BaseHttpClient
 }
 
@@ -118,12 +119,18 @@ func (c *Client) Initialize(ctx context.Context) error {
 	}
 	logger.Debug("Initializing Coupa client")
 
-	token, err := c.ReadOnlyTokenSource.Token()
+	rtoken, err := c.ReadOnlyTokenSource.Token()
 	if err != nil {
 		return err
 	}
 
-	c.bearerToken = token.AccessToken
+	rwtoken, err := c.readWriteTokenSource.Token()
+	if err != nil {
+		return err
+	}
+
+	c.readOnlyToken = rtoken.AccessToken
+	c.readWriteToken = rwtoken.AccessToken
 	c.initialized = true
 	return nil
 }
