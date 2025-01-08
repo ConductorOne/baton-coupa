@@ -1,12 +1,16 @@
 ![Baton Logo](./docs/images/baton-logo.png)
 
-# `baton-coupa` [![Go Reference](https://pkg.go.dev/badge/github.com/conductorone/baton-coupa.svg)](https://pkg.go.dev/github.com/conductorone/baton-coupa) ![main ci](https://github.com/conductorone/baton-coupa/actions/workflows/main.yaml/badge.svg)
+#
+`baton-coupa` [![Go Reference](https://pkg.go.dev/badge/github.com/conductorone/baton-coupa.svg)](https://pkg.go.dev/github.com/conductorone/baton-coupa) ![main ci](https://github.com/conductorone/baton-coupa/actions/workflows/main.yaml/badge.svg)
 
 `baton-coupa` is a connector for built using the [Baton SDK](https://github.com/conductorone/baton-sdk).
 
 Check out [Baton](https://github.com/conductorone/baton) to learn more the project in general.
 
 # Getting Started
+
+- [Coupa docs](https://compass.coupa.com/en-us/products/core-platform/integration-playbooks-and-resources/integration-knowledge-articles/postman-collection-for-coupa-apis)
+- [Coupa GraphQL](https://compass.coupa.com/en-us/products/product-documentation/integration-technical-documentation/the-coupa-core-api/get-started-with-the-api/introducing-graphql)
 
 ## brew
 
@@ -37,6 +41,7 @@ baton resources
 # Data Model
 
 `baton-coupa` will pull down information about the following resources:
+
 - Users
 
 # Contributing, Support and Issues
