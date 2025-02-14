@@ -145,6 +145,7 @@ func (o *roleBuilder) Grants(
 	}
 	defer response.Body.Close()
 
+	lastId := ""
 	for _, user := range target.Users {
 		outputGrants = append(
 			outputGrants,
@@ -157,9 +158,10 @@ func (o *roleBuilder) Grants(
 				},
 			),
 		)
+		lastId = strconv.Itoa(user.Id)
 	}
 
-	return outputGrants, "", outputAnnotations, nil
+	return outputGrants, lastId, outputAnnotations, nil
 }
 
 func (o *roleBuilder) Grant(ctx context.Context, resource *v2.Resource, entitlement *v2.Entitlement) ([]*v2.Grant, annotations.Annotations, error) {
