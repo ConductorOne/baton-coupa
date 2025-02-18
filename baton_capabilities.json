@@ -3,6 +3,42 @@
   "resourceTypeCapabilities":  [
     {
       "resourceType":  {
+        "id":  "group",
+        "displayName":  "group",
+        "traits":  [
+          "TRAIT_GROUP"
+        ]
+      },
+      "capabilities":  [
+        "CAPABILITY_SYNC",
+        "CAPABILITY_PROVISION"
+      ]
+    },
+    {
+      "resourceType":  {
+        "id":  "license",
+        "displayName":  "license"
+      },
+      "capabilities":  [
+        "CAPABILITY_SYNC",
+        "CAPABILITY_PROVISION"
+      ]
+    },
+    {
+      "resourceType":  {
+        "id":  "role",
+        "displayName":  "role",
+        "traits":  [
+          "TRAIT_ROLE"
+        ]
+      },
+      "capabilities":  [
+        "CAPABILITY_SYNC",
+        "CAPABILITY_PROVISION"
+      ]
+    },
+    {
+      "resourceType":  {
         "id":  "user",
         "displayName":  "User",
         "traits":  [
@@ -15,6 +51,8 @@
     }
   ],
   "connectorCapabilities":  [
+    "CAPABILITY_PROVISION",
     "CAPABILITY_SYNC"
-  ]
+  ],
+  "credentialDetails":  {}
 }
