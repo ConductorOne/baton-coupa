@@ -25,9 +25,9 @@ jobs:
 
       - name: Run and save output
         env:
-          COUPA_CLIENT_ID: "example"
-          COUPA_CLIENT_SECRET: "example"
-          COUPA_BASE_URL: "https://example.coupacloud.com"
+          BATON_COUPA_CLIENT_ID: "example"
+          BATON_COUPA_CLIENT_SECRET: "example"
+          BATON_COUPA_DOMAIN: "https://example.coupacloud.com"
         run: ./connector capabilities > baton_capabilities.json
 
       - name: Commit changes
