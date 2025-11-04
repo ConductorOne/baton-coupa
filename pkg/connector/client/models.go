@@ -112,3 +112,14 @@ type UserLicenseResponse struct {
 	TravelUser      bool `json:"travel-user"`
 	TreasuryUser    bool `json:"treasury-user"`
 }
+
+type UpdateUserRequest struct {
+	Active bool `json:"active"`
+}
+
+type UpdateUserResponse struct {
+	ID       int    `json:"id"`
+	Email    string `json:"email"`
+	Fullname string `json:"fullname"`
+	Active   bool   `json:"active"`
+}

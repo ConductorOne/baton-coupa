@@ -72,5 +72,13 @@ func New(
 	if err != nil {
 		return nil, err
 	}
+
+	// Pre-initialize the client to cache OAuth tokens
+	// This ensures action handlers complete quickly (< 1 second)
+	err = coupaClient.Initialize(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Connector{client: coupaClient, ctx: ctx}, nil
 }

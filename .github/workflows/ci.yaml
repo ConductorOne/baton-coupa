@@ -48,7 +48,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        test-case: [ roles, groups, licenses ]
+        test-case: [ roles, groups, licenses, actions ]
 
     env:
       BATON_LOG_LEVEL: debug
@@ -58,6 +58,8 @@ jobs:
       BATON_COUPA_CLIENT_ID: "${{ secrets.BATON_COUPA_CLIENT_ID }}"
       BATON_COUPA_CLIENT_SECRET: "${{ secrets.BATON_COUPA_CLIENT_SECRET }}"
       BATON_COUPA_DOMAIN: "${{ secrets.BATON_COUPA_DOMAIN }}"
+      
+      BATON_STATUS_TEST_USER_ID: "${{ secrets.BATON_STATUS_TEST_USER_ID }}"
 
       BATON_CONNECTOR: ./baton-coupa
 
@@ -83,5 +85,8 @@ jobs:
               ;;
             "licenses")
               ./scripts/validate-grant.sh ${{ env.CONNECTOR_PRINCIPAL }} user license:treasury_user:assigned license:treasury_user:assigned:user:${{ env.CONNECTOR_PRINCIPAL }}
+              ;;
+            "actions")
+              ./scripts/validate-actions.sh ${{ env.BATON_STATUS_TEST_USER_ID }}
               ;;
           esac

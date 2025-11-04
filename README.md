@@ -44,6 +44,42 @@ baton resources
 
 - Users
 
+# Actions
+
+`baton-coupa` supports the following actions on user accounts:
+
+## Enable User
+Enables a disabled user account in Coupa.
+
+**Action Name:** `enable_user`
+
+**Arguments:**
+- `userId` (required, string): The ID of the user to enable
+
+**Returns:**
+- `success` (boolean): `true` if the user was successfully enabled
+
+**Example:**
+```bash
+baton-coupa --invoke-action enable_user --invoke-action-args='{"userId":"USER_ID"}'
+```
+
+## Disable User
+Disables an active user account in Coupa.
+
+**Action Name:** `disable_user`
+
+**Arguments:**
+- `userId` (required, string): The ID of the user to disable
+
+**Returns:**
+- `success` (boolean): `true` if the user was successfully disabled
+
+**Example:**
+```bash
+baton-coupa --invoke-action disable_user --invoke-action-args='{"userId":"USER_ID"}'
+```
+
 # Contributing, Support and Issues
 
 We started Baton because we were tired of taking screenshots and manually
