@@ -75,6 +75,7 @@ jobs:
       - name: Build baton-coupa
         run: go build ./cmd/baton-coupa
       - name: Run tests for ${{ matrix.test-case }}
+        if: matrix.test-case != 'actions'
         run: |
           case "${{ matrix.test-case }}" in
             "roles")
@@ -86,7 +87,15 @@ jobs:
             "licenses")
               ./scripts/validate-grant.sh ${{ env.CONNECTOR_PRINCIPAL }} user license:treasury_user:assigned license:treasury_user:assigned:user:${{ env.CONNECTOR_PRINCIPAL }}
               ;;
-            "actions")
-              ./scripts/validate-actions.sh ${{ env.BATON_STATUS_TEST_USER_ID }}
-              ;;
           esac
+      
+      - name: Test Account Status Changes
+        if: matrix.test-case == 'actions'
+        # TODO: Replace with the official action when it's published
+        uses: ConductorOne/github-workflows/actions/account-status-test@sergiocorral/account-status-test
+        with:
+          connector: './baton-coupa'
+          account-id: '${{ env.BATON_STATUS_TEST_USER_ID }}'
+          enable-action-name: 'enable_user'
+          disable-action-name: 'disable_user'
+          id-parameter-name: 'userId'
