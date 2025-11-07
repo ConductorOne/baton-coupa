@@ -29,8 +29,8 @@ func (c *Client) UpdateUser(
 		return nil, nil, err
 	}
 
-	request := map[string]interface{}{
-		"active": active,
+	request := UpdateUserRequest{
+		Active: active,
 	}
 
 	var userResponse UpdateUserResponse

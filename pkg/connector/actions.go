@@ -27,7 +27,7 @@ var enableUserAction = &v2.BatonActionSchema{
 	Description: "Enables a disabled user account in Coupa, allowing them to access the system",
 	Arguments: []*config.Field{
 		{
-			Name:        "userId",
+			Name:        "user_id",
 			DisplayName: "User ID",
 			Description: "The numeric ID of the user to enable",
 			Field:       &config.Field_StringField{},
@@ -43,7 +43,6 @@ var enableUserAction = &v2.BatonActionSchema{
 		},
 	},
 	ActionType: []v2.ActionType{
-		v2.ActionType_ACTION_TYPE_ACCOUNT,
 		v2.ActionType_ACTION_TYPE_ACCOUNT_ENABLE,
 	},
 }
@@ -54,7 +53,7 @@ var disableUserAction = &v2.BatonActionSchema{
 	Description: "Disables an active user account in Coupa, preventing them from accessing the system",
 	Arguments: []*config.Field{
 		{
-			Name:        "userId",
+			Name:        "user_id",
 			DisplayName: "User ID",
 			Description: "The numeric ID of the user to disable",
 			Field:       &config.Field_StringField{},
@@ -70,7 +69,6 @@ var disableUserAction = &v2.BatonActionSchema{
 		},
 	},
 	ActionType: []v2.ActionType{
-		v2.ActionType_ACTION_TYPE_ACCOUNT,
 		v2.ActionType_ACTION_TYPE_ACCOUNT_DISABLE,
 	},
 }
@@ -91,8 +89,8 @@ func (c *Connector) RegisterActionManager(ctx context.Context) (connectorbuilder
 	return actionManager, nil
 }
 
-// extractAndValidateUserId extracts and validates the userId argument from action arguments.
-// Returns the userId as both string and int, or an error if validation fails.
+// extractAndValidateUserId extracts and validates the user_id argument from action arguments.
+// Returns the user_id as both string and int, or an error if validation fails.
 func extractAndValidateUserId(args *structpb.Struct) (string, int, error) {
 	if args == nil {
 		return "", 0, fmt.Errorf("arguments cannot be nil")
@@ -102,27 +100,27 @@ func extractAndValidateUserId(args *structpb.Struct) (string, int, error) {
 		return "", 0, fmt.Errorf("arguments fields cannot be nil")
 	}
 
-	userId, ok := args.Fields["userId"]
+	userId, ok := args.Fields["user_id"]
 	if !ok {
-		return "", 0, fmt.Errorf("missing required argument: userId")
+		return "", 0, fmt.Errorf("missing required argument: user_id")
 	}
 
 	if userId == nil {
-		return "", 0, fmt.Errorf("userId value cannot be nil")
+		return "", 0, fmt.Errorf("user_id value cannot be nil")
 	}
 
 	userIdStr := userId.GetStringValue()
 	if userIdStr == "" {
-		return "", 0, fmt.Errorf("userId cannot be empty")
+		return "", 0, fmt.Errorf("user_id cannot be empty")
 	}
 
 	userIdInt, err := strconv.Atoi(userIdStr)
 	if err != nil {
-		return "", 0, fmt.Errorf("userId must be a valid integer: %w", err)
+		return "", 0, fmt.Errorf("user_id must be a valid integer: %w", err)
 	}
 
 	if userIdInt <= 0 {
-		return "", 0, fmt.Errorf("userId must be a positive integer, got: %d", userIdInt)
+		return "", 0, fmt.Errorf("user_id must be a positive integer, got: %d", userIdInt)
 	}
 
 	return userIdStr, userIdInt, nil
@@ -160,8 +158,6 @@ func (c *Connector) enableUser(ctx context.Context, args *structpb.Struct) (*str
 		l.Warn("user enable operation completed but user is still inactive",
 			zap.String("userId", userIdStr),
 			zap.Bool("active", updatedUser.Active))
-	} else {
-		l.Info("user enabled successfully", zap.String("userId", userIdStr))
 	}
 
 	return createActionResponse(success), annos, nil
@@ -190,8 +186,6 @@ func (c *Connector) disableUser(ctx context.Context, args *structpb.Struct) (*st
 		l.Warn("user disable operation completed but user is still active",
 			zap.String("userId", userIdStr),
 			zap.Bool("active", updatedUser.Active))
-	} else {
-		l.Info("user disabled successfully", zap.String("userId", userIdStr))
 	}
 
 	return createActionResponse(success), annos, nil

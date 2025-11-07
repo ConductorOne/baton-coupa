@@ -92,10 +92,10 @@ jobs:
       - name: Test Account Status Changes
         if: matrix.test-case == 'actions'
         # TODO: Replace with the official action when it's published
-        uses: ConductorOne/github-workflows/actions/account-status-test@sergiocorral/account-status-test
+        uses: ConductorOne/github-workflows/actions/account-status-lifecycle-test@v3
         with:
           connector: './baton-coupa'
           account-id: '${{ env.BATON_STATUS_TEST_USER_ID }}'
           enable-action-name: 'enable_user'
           disable-action-name: 'disable_user'
-          id-parameter-name: 'userId'
+          id-parameter-name: 'user_id'
