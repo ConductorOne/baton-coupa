@@ -1,36 +1,39 @@
 name: ci
-on: pull_request
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+  push:
+    branches:
+      - main
 jobs:
   go-lint:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
       - name: Install Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.22.x
-      - name: Checkout code
-        uses: actions/checkout@v4
+          go-version-file: go.mod
       - name: Run linters
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v8
         with:
           version: latest
           args: --timeout=3m
   go-test:
     strategy:
       matrix:
-        go-version: [ 1.22.x ]
-        platform: [ ubuntu-latest ]
+        platform: [ubuntu-latest]
     runs-on: ${{ matrix.platform }}
     steps:
-      - name: Install Go
-        if: success()
-        uses: actions/setup-go@v5
-        with:
-          go-version: ${{ matrix.go-version }}
       - name: Checkout code
         uses: actions/checkout@v4
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
       - name: go tests
-        run: (set -o pipefail && go test -v -covermode=count -json ./... | tee test.json)
+        run: (set -o pipefail && go test -v -covermode=atomic -json ./... | tee test.json)
       - name: annotate go tests
         if: always()
         uses: guyarb/golang-test-annotations@v0.5.1
@@ -45,7 +48,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        test-case: [ roles, groups, licenses ]
+        test-case: [ roles, groups, licenses, actions ]
 
     env:
       BATON_LOG_LEVEL: debug
@@ -55,21 +58,24 @@ jobs:
       BATON_COUPA_CLIENT_ID: "${{ secrets.BATON_COUPA_CLIENT_ID }}"
       BATON_COUPA_CLIENT_SECRET: "${{ secrets.BATON_COUPA_CLIENT_SECRET }}"
       BATON_COUPA_DOMAIN: "${{ secrets.BATON_COUPA_DOMAIN }}"
+      
+      BATON_STATUS_TEST_USER_ID: "${{ secrets.BATON_STATUS_TEST_USER_ID }}"
 
       BATON_CONNECTOR: ./baton-coupa
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
       - name: Install Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.22.x
-      - name: Checkout code
-        uses: actions/checkout@v4
+          go-version-file: go.mod
       - name: Install baton
         run: ./scripts/get-baton.sh && mv baton /usr/local/bin
       - name: Build baton-coupa
         run: go build ./cmd/baton-coupa
       - name: Run tests for ${{ matrix.test-case }}
+        if: matrix.test-case != 'actions'
         run: |
           case "${{ matrix.test-case }}" in
             "roles")
@@ -82,3 +88,14 @@ jobs:
               ./scripts/validate-grant.sh ${{ env.CONNECTOR_PRINCIPAL }} user license:treasury_user:assigned license:treasury_user:assigned:user:${{ env.CONNECTOR_PRINCIPAL }}
               ;;
           esac
+      
+      - name: Test Account Status Changes
+        if: matrix.test-case == 'actions'
+        # TODO: Replace with the official action when it's published
+        uses: ConductorOne/github-workflows/actions/account-status-lifecycle-test@v3
+        with:
+          connector: './baton-coupa'
+          account-id: '${{ env.BATON_STATUS_TEST_USER_ID }}'
+          enable-action-name: 'enable_user'
+          disable-action-name: 'disable_user'
+          id-parameter-name: 'user_id'

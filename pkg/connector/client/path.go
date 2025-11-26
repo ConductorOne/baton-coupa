@@ -11,4 +11,7 @@ const (
 
 	// setLicensePath set user id in the path.
 	setLicensePath = `/api/users/%d?fields=["id","analyticsUser","aicUser","ccwUser","contractsUser","expenseUser","inventoryUser","purchasingUser","riskAssessUser","sourcingUser","spendGuardUser","supplyChainUser","travelUser","treasuryUser"]`
+
+	// updateUserPath set user id in the path.
+	updateUserPath = `/api/users/%d`
 )
