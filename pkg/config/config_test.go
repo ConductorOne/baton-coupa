@@ -35,7 +35,7 @@ func TestConfigs(t *testing.T) {
 		},
 	}
 
-	test.ExerciseTestCases(t, ConfigurationSchema, ValidateConfig, testCases)
+	test.ExerciseTestCases(t, Config, nil, testCases)
 }
 
 func TestNormalizeCoupaURL(t *testing.T) {
