@@ -4,8 +4,14 @@ import (
 	"testing"
 
 	"github.com/conductorone/baton-sdk/pkg/test"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 )
+
+func ValidateConfig(v *viper.Viper) error {
+	_, err := NormalizeCoupaURL(v.GetString(CoupaDomain.FieldName))
+	return err
+}
 
 func TestConfigs(t *testing.T) {
 	testCases := []test.TestCase{
@@ -35,7 +41,7 @@ func TestConfigs(t *testing.T) {
 		},
 	}
 
-	test.ExerciseTestCases(t, Config, nil, testCases)
+	test.ExerciseTestCases(t, Config, ValidateConfig, testCases)
 }
 
 func TestNormalizeCoupaURL(t *testing.T) {

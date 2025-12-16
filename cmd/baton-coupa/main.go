@@ -24,7 +24,7 @@ func main() {
 
 	_, cmd, err := config.DefineConfiguration(
 		ctx,
-		"baton-coupa",
+		connectorName,
 		getConnector,
 		cfg.Config,
 	)
