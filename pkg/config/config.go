@@ -26,6 +26,7 @@ var (
 		"coupa-client-secret",
 		field.WithDisplayName("Client Secret"),
 		field.WithRequired(true),
+		field.WithIsSecret(true),
 		field.WithDescription("Your Coupa Client Secret"),
 	)
 	CoupaDomain = field.StringField(
