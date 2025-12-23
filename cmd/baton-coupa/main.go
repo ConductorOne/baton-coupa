@@ -5,13 +5,12 @@ import (
 	"fmt"
 	"os"
 
-	coppaConfig "github.com/conductorone/baton-coupa/pkg/config"
+	cfg "github.com/conductorone/baton-coupa/pkg/config"
 	"github.com/conductorone/baton-coupa/pkg/connector"
 	"github.com/conductorone/baton-sdk/pkg/config"
 	"github.com/conductorone/baton-sdk/pkg/connectorbuilder"
 	"github.com/conductorone/baton-sdk/pkg/types"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
-	"github.com/spf13/viper"
 	"go.uber.org/zap"
 )
 
@@ -27,7 +26,7 @@ func main() {
 		ctx,
 		connectorName,
 		getConnector,
-		coppaConfig.ConfigurationSchema,
+		cfg.Config,
 	)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err.Error())
@@ -43,17 +42,14 @@ func main() {
 	}
 }
 
-func getConnector(ctx context.Context, v *viper.Viper) (types.ConnectorServer, error) {
+func getConnector(ctx context.Context, cc *cfg.Coupa) (types.ConnectorServer, error) {
 	l := ctxzap.Extract(ctx)
-	if err := coppaConfig.ValidateConfig(v); err != nil {
-		return nil, err
-	}
 
 	cb, err := connector.New(
 		ctx,
-		v.GetString(coppaConfig.CoupaDomain.FieldName),
-		v.GetString(coppaConfig.ClientIdField.FieldName),
-		v.GetString(coppaConfig.ClientSecretField.FieldName),
+		cc.CoupaDomain,
+		cc.CoupaClientId,
+		cc.CoupaClientSecret,
 	)
 	if err != nil {
 		l.Error("error creating connector", zap.Error(err))

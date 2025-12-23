@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/conductorone/baton-sdk/pkg/field"
-	"github.com/spf13/viper"
 )
 
 var (
@@ -19,16 +18,20 @@ var (
 	}
 	ClientIdField = field.StringField(
 		"coupa-client-id",
+		field.WithDisplayName("Client ID"),
 		field.WithRequired(true),
 		field.WithDescription("Your Coupa Client ID"),
 	)
 	ClientSecretField = field.StringField(
 		"coupa-client-secret",
+		field.WithDisplayName("Client Secret"),
 		field.WithRequired(true),
+		field.WithIsSecret(true),
 		field.WithDescription("Your Coupa Client Secret"),
 	)
 	CoupaDomain = field.StringField(
 		"coupa-domain",
+		field.WithDisplayName("Coupa Domain"),
 		field.WithRequired(true),
 		field.WithDescription("Your Coupa Domain, ex: acme.coupacloud.com"),
 	)
@@ -40,10 +43,14 @@ var (
 		ClientSecretField,
 		CoupaDomain,
 	}
+)
 
-	ConfigurationSchema = field.Configuration{
-		Fields: ConfigurationFields,
-	}
+//go:generate go run ./gen
+var Config = field.NewConfiguration(
+	ConfigurationFields,
+	field.WithConnectorDisplayName("Coupa"),
+	field.WithHelpUrl("/docs/baton/coupa"),
+	field.WithIconUrl("/static/app-icons/coupa.svg"),
 )
 
 // TODO(marcos) move this code to baton-sdk.
@@ -97,13 +104,4 @@ func NormalizeCoupaURL(domain string) (string, error) {
 
 	rv := "https://" + strings.Join([]string{tenantDomain, coupaDomain}, ".")
 	return rv, nil
-}
-
-// ValidateConfig is run after the configuration is loaded, and should return an
-// error if it isn't valid. Implementing this function is optional, it only
-// needs to perform extra validations that cannot be encoded with configuration
-// parameters.
-func ValidateConfig(v *viper.Viper) error {
-	_, err := NormalizeCoupaURL(v.GetString(CoupaDomain.FieldName))
-	return err
 }
