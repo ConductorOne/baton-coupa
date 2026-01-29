@@ -12,6 +12,8 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	native_sync "sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/Masterminds/semver/v3"
@@ -43,12 +45,42 @@ import (
 
 var tracer = otel.Tracer("baton-sdk/sync")
 
-const defaultMaxDepth int64 = 20
-
-var maxDepth, _ = strconv.ParseInt(os.Getenv("BATON_GRAPH_EXPAND_MAX_DEPTH"), 10, 64)
 var dontFixCycles, _ = strconv.ParseBool(os.Getenv("BATON_DONT_FIX_CYCLES"))
 
 var ErrSyncNotComplete = fmt.Errorf("sync exited without finishing")
+var ErrTooManyWarnings = fmt.Errorf("too many warnings, exiting sync")
+var ErrNoSyncIDFound = fmt.Errorf("no syncID found after starting or resuming sync")
+
+// IsSyncPreservable returns true if the error returned by Sync() means that the sync artifact is useful.
+// This either means that there was no error, or that the error is recoverable (we can resume the sync and possibly succeed next time).
+func IsSyncPreservable(err error) bool {
+	if err == nil {
+		return true
+	}
+	// ErrSyncNotComplete means we hit the run duration timeout.
+	// ErrTooManyWarnings means we hit too many warnings.
+	// Both are recoverable errors.
+	if errors.Is(err, ErrSyncNotComplete) || errors.Is(err, ErrTooManyWarnings) {
+		return true
+	}
+	statusErr, ok := status.FromError(err)
+	if !ok {
+		return false
+	}
+	switch statusErr.Code() {
+	case codes.OK,
+		codes.NotFound,
+		codes.PermissionDenied,
+		codes.ResourceExhausted,
+		codes.FailedPrecondition,
+		codes.Aborted,
+		codes.Unavailable,
+		codes.Unauthenticated:
+		return true
+	default:
+		return false
+	}
+}
 
 type Syncer interface {
 	Sync(context.Context) error
@@ -223,6 +255,8 @@ type syncer struct {
 	injectSyncIDAnnotation              bool
 	setSessionStore                     sessions.SetSessionStore
 	syncResourceTypes                   []string
+	previousSyncMu                      native_sync.Mutex
+	previousSyncIDPtr                   atomic.Pointer[string]
 }
 
 const minCheckpointInterval = 10 * time.Second
@@ -246,6 +280,33 @@ func (s *syncer) Checkpoint(ctx context.Context, force bool) error {
 	}
 
 	return nil
+}
+
+func (s *syncer) getPreviousFullSyncID(ctx context.Context) (string, error) {
+	if ptr := s.previousSyncIDPtr.Load(); ptr != nil {
+		return *ptr, nil
+	}
+
+	s.previousSyncMu.Lock()
+	defer s.previousSyncMu.Unlock()
+
+	if ptr := s.previousSyncIDPtr.Load(); ptr != nil {
+		return *ptr, nil
+	}
+
+	psf, ok := s.store.(latestSyncFetcher)
+	if !ok {
+		empty := ""
+		s.previousSyncIDPtr.Store(&empty)
+		return "", nil
+	}
+
+	previousSyncID, err := psf.LatestFinishedSync(ctx, connectorstore.SyncTypeFull)
+	if err == nil {
+		s.previousSyncIDPtr.Store(&previousSyncID)
+	}
+
+	return previousSyncID, err
 }
 
 func (s *syncer) handleInitialActionForStep(ctx context.Context, a Action) {
@@ -401,7 +462,7 @@ func (s *syncer) Sync(ctx context.Context) error {
 
 	// Set the syncID on the wrapper after we have it
 	if syncID == "" {
-		err = errors.New("no syncID found after starting or resuming sync")
+		err = ErrNoSyncIDFound
 		l.Error("no syncID found after starting or resuming sync", zap.Error(err))
 		return err
 	}
@@ -476,7 +537,7 @@ func (s *syncer) Sync(ctx context.Context) error {
 		if len(warnings) > 10 {
 			completedActionsCount := s.state.GetCompletedActionsCount()
 			if completedActionsCount > 0 && float64(len(warnings))/float64(completedActionsCount) > 0.1 {
-				return fmt.Errorf("too many warnings, exiting sync. warnings: %v completed actions: %d", warnings, completedActionsCount)
+				return fmt.Errorf("%w: warnings: %v completed actions: %d", ErrTooManyWarnings, warnings, completedActionsCount)
 			}
 		}
 		select {
@@ -846,10 +907,21 @@ func validateSyncResourceTypesFilter(resourceTypesFilter []string, validResource
 	return nil
 }
 
+func (s *syncer) hasChildResources(resource *v2.Resource) bool {
+	annos := annotations.Annotations(resource.GetAnnotations())
+
+	return annos.Contains((*v2.ChildResourceType)(nil))
+}
+
 // getSubResources fetches the sub resource types from a resources' annotations.
 func (s *syncer) getSubResources(ctx context.Context, parent *v2.Resource) error {
 	ctx, span := tracer.Start(ctx, "syncer.getSubResources")
 	defer span.End()
+
+	syncResourceTypeMap := make(map[string]bool)
+	for _, rt := range s.syncResourceTypes {
+		syncResourceTypeMap[rt] = true
+	}
 
 	for _, a := range parent.GetAnnotations() {
 		if a.MessageIs((*v2.ChildResourceType)(nil)) {
@@ -858,7 +930,11 @@ func (s *syncer) getSubResources(ctx context.Context, parent *v2.Resource) error
 			if err != nil {
 				return err
 			}
-
+			if len(s.syncResourceTypes) > 0 {
+				if shouldSync := syncResourceTypeMap[crt.GetResourceTypeId()]; !shouldSync {
+					continue
+				}
+			}
 			childAction := Action{
 				Op:                   SyncResourcesOp,
 				ResourceTypeID:       crt.GetResourceTypeId(),
@@ -1058,25 +1134,39 @@ func (s *syncer) syncResources(ctx context.Context) error {
 
 	bulkPutResoruces := []*v2.Resource{}
 	for _, r := range resp.GetList() {
+		validatedResource := false
+
 		// Check if we've already synced this resource, skip it if we have
 		_, err = s.store.GetResource(ctx, reader_v2.ResourcesReaderServiceGetResourceRequest_builder{
 			ResourceId: v2.ResourceId_builder{ResourceType: r.GetId().GetResourceType(), Resource: r.GetId().GetResource()}.Build(),
 		}.Build())
 		if err == nil {
-			continue
+			err = s.validateResourceTraits(ctx, r)
+			if err != nil {
+				return err
+			}
+			validatedResource = true
+
+			// We must *ALSO* check if we have any child resources.
+			if !s.hasChildResources(r) {
+				// Since we only have the resource type IDs of child resources,
+				// we can't tell if we already have synced those child resources.
+				// Those children may also have their own child resources,
+				// so we are conservative here and just re-sync this resource.
+				continue
+			}
 		}
 
-		if !errors.Is(err, sql.ErrNoRows) {
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
 			return err
 		}
 
-		err = s.validateResourceTraits(ctx, r)
-		if err != nil {
-			return err
+		if !validatedResource {
+			err = s.validateResourceTraits(ctx, r)
+			if err != nil {
+				return err
+			}
 		}
-
-		// Set the resource creation source
-		r.SetCreationSource(v2.Resource_CREATION_SOURCE_CONNECTOR_LIST_RESOURCES)
 
 		bulkPutResoruces = append(bulkPutResoruces, r)
 
@@ -1652,11 +1742,40 @@ func (s *syncer) loadEntitlementGraph(ctx context.Context, graph *expand.Entitle
 	}
 
 	// Process grants and add edges to the graph
+	updatedGrants := make([]*v2.Grant, 0)
 	for _, grant := range resp.GetList() {
 		err := s.processGrantForGraph(ctx, grant, graph)
 		if err != nil {
 			return err
 		}
+
+		// Remove expandable annotation from descendant grant now that we've added it to the graph.
+		// That way if this sync is part of a compaction, expanding grants at the end of compaction won't redo work.
+		newAnnos := make(annotations.Annotations, 0)
+		updated := false
+		for _, anno := range grant.GetAnnotations() {
+			if anno.MessageIs(&v2.GrantExpandable{}) {
+				updated = true
+			} else {
+				newAnnos = append(newAnnos, anno)
+			}
+		}
+		if !updated {
+			continue
+		}
+
+		grant.SetAnnotations(newAnnos)
+		l.Debug("removed expandable annotation from grant", zap.String("grant_id", grant.GetId()))
+		updatedGrants = append(updatedGrants, grant)
+		updatedGrants, err = expand.PutGrantsInChunks(ctx, s.store, updatedGrants, 10000)
+		if err != nil {
+			return err
+		}
+	}
+
+	_, err = expand.PutGrantsInChunks(ctx, s.store, updatedGrants, 0)
+	if err != nil {
+		return err
 	}
 
 	if graph.Loaded {
@@ -1825,14 +1944,9 @@ func (s *syncer) fetchResourceForPreviousSync(ctx context.Context, resourceID *v
 
 	l := ctxzap.Extract(ctx)
 
-	var previousSyncID string
-	var err error
-
-	if psf, ok := s.store.(latestSyncFetcher); ok {
-		previousSyncID, err = psf.LatestFinishedSync(ctx, connectorstore.SyncTypeFull)
-		if err != nil {
-			return "", nil, err
-		}
+	previousSyncID, err := s.getPreviousFullSyncID(ctx)
+	if err != nil {
+		return "", nil, err
 	}
 
 	if previousSyncID == "" {
@@ -1897,6 +2011,7 @@ func (s *syncer) fetchEtaggedGrantsForResource(
 	var ret []*v2.Grant
 
 	// No previous etag, so an etag match is not possible
+	// TODO(kans): do the request again to get the grants, but this time don't use the etag match!
 	if prevEtag == nil {
 		return nil, false, errors.New("connector returned an etag match but there is no previous sync generation to use")
 	}
@@ -2403,6 +2518,11 @@ func (s *syncer) listExternalEntitlementsForResource(ctx context.Context, resour
 			break
 		}
 	}
+	for _, ent := range ents {
+		annos := annotations.Annotations(ent.GetAnnotations())
+		annos.Update(&v2.EntitlementImmutable{})
+		ent.SetAnnotations(annos)
+	}
 	return ents, nil
 }
 
@@ -2420,6 +2540,12 @@ func (s *syncer) listExternalGrantsForEntitlement(ctx context.Context, ent *v2.E
 			}
 			grants := grantsForEntitlementResp.GetList()
 			if len(grants) > 0 {
+				// Add immutable annotation to external resource grants.
+				for _, grant := range grants {
+					annos := annotations.Annotations(grant.GetAnnotations())
+					annos.Update(&v2.GrantImmutable{})
+					grant.SetAnnotations(annos)
+				}
 				if !yield(grants, err) {
 					return
 				}
@@ -2783,277 +2909,35 @@ func GetExpandableAnnotation(annos annotations.Annotations) (*v2.GrantExpandable
 	return expandableAnno, nil
 }
 
-func (s *syncer) putGrantsInChunks(ctx context.Context, grants []*v2.Grant, minChunkSize int) ([]*v2.Grant, error) {
-	if len(grants) <= minChunkSize {
-		return grants, nil
-	}
-
-	err := s.store.PutGrants(ctx, grants...)
-	if err != nil {
-		return nil, fmt.Errorf("putGrantsInChunks: error putting grants: %w", err)
-	}
-
-	return make([]*v2.Grant, 0), nil
-}
-
-func (s *syncer) runGrantExpandActions(ctx context.Context) (bool, error) {
-	ctx, span := tracer.Start(ctx, "syncer.runGrantExpandActions")
-	defer span.End()
-
-	l := ctxzap.Extract(ctx)
-
-	graph := s.state.EntitlementGraph(ctx)
-	l = l.With(zap.Int("depth", graph.Depth))
-
-	// Peek the next action on the stack
-	if len(graph.Actions) == 0 {
-		l.Debug("runGrantExpandActions: no actions")
-
-		return true, nil
-	}
-	action := graph.Actions[0]
-
-	l = l.With(zap.String("source_entitlement_id", action.SourceEntitlementID), zap.String("descendant_entitlement_id", action.DescendantEntitlementID))
-
-	// Fetch source and descendant entitlement
-	sourceEntitlement, err := s.store.GetEntitlement(ctx, reader_v2.EntitlementsReaderServiceGetEntitlementRequest_builder{
-		EntitlementId: action.SourceEntitlementID,
-	}.Build())
-	if err != nil {
-		l.Error("runGrantExpandActions: error fetching source entitlement", zap.Error(err))
-		return false, fmt.Errorf("runGrantExpandActions: error fetching source entitlement: %w", err)
-	}
-
-	descendantEntitlement, err := s.store.GetEntitlement(ctx, reader_v2.EntitlementsReaderServiceGetEntitlementRequest_builder{
-		EntitlementId: action.DescendantEntitlementID,
-	}.Build())
-	if err != nil {
-		l.Error("runGrantExpandActions: error fetching descendant entitlement", zap.Error(err))
-		return false, fmt.Errorf("runGrantExpandActions: error fetching descendant entitlement: %w", err)
-	}
-
-	// Fetch a page of source grants
-	sourceGrants, err := s.store.ListGrantsForEntitlement(ctx, reader_v2.GrantsReaderServiceListGrantsForEntitlementRequest_builder{
-		Entitlement: sourceEntitlement.GetEntitlement(),
-		PageToken:   action.PageToken,
-		// Skip this grant if it is not for a resource type we care about
-		PrincipalResourceTypeIds: action.ResourceTypeIDs,
-	}.Build())
-	if err != nil {
-		l.Error("runGrantExpandActions: error fetching source grants", zap.Error(err))
-		return false, fmt.Errorf("runGrantExpandActions: error fetching source grants: %w", err)
-	}
-
-	var newGrants = make([]*v2.Grant, 0)
-	for _, sourceGrant := range sourceGrants.GetList() {
-		// If this is a shallow action, then we only want to expand grants that have no sources which indicates that it was directly assigned.
-		if action.Shallow {
-			sourcesMap := sourceGrant.GetSources().GetSources()
-			// If we have no sources, this is a direct grant
-			foundDirectGrant := len(sourcesMap) == 0
-			// If the source grant has sources, then we need to see if any of them are the source entitlement itself
-			if sourcesMap[action.SourceEntitlementID] != nil {
-				foundDirectGrant = true
-			}
-
-			// This is not a direct grant, so skip it since we are a shallow action
-			if !foundDirectGrant {
-				continue
-			}
-		}
-
-		// Unroll all grants for the principal on the descendant entitlement. This should, on average, be... 1.
-		pageToken := ""
-		for {
-			req := reader_v2.GrantsReaderServiceListGrantsForEntitlementRequest_builder{
-				Entitlement: descendantEntitlement.GetEntitlement(),
-				PrincipalId: sourceGrant.GetPrincipal().GetId(),
-				PageToken:   pageToken,
-				Annotations: nil,
-			}.Build()
-
-			resp, err := s.store.ListGrantsForEntitlement(ctx, req)
-			if err != nil {
-				l.Error("runGrantExpandActions: error fetching descendant grants", zap.Error(err))
-				return false, fmt.Errorf("runGrantExpandActions: error fetching descendant grants: %w", err)
-			}
-			descendantGrants := resp.GetList()
-
-			// If we have no grants for the principal in the descendant entitlement, make one.
-			if pageToken == "" && resp.GetNextPageToken() == "" && len(descendantGrants) == 0 {
-				// TODO(morgabra): This is kinda gnarly, grant ID won't have any special meaning.
-				// FIXME(morgabra): We should probably conflict check with grant id?
-				descendantGrant, err := s.newExpandedGrant(ctx, descendantEntitlement.GetEntitlement(), sourceGrant.GetPrincipal(), action.SourceEntitlementID)
-				if err != nil {
-					l.Error("runGrantExpandActions: error creating new grant", zap.Error(err))
-					return false, fmt.Errorf("runGrantExpandActions: error creating new grant: %w", err)
-				}
-				newGrants = append(newGrants, descendantGrant)
-				newGrants, err = s.putGrantsInChunks(ctx, newGrants, 10000)
-				if err != nil {
-					l.Error("runGrantExpandActions: error updating descendant grants", zap.Error(err))
-					return false, fmt.Errorf("runGrantExpandActions: error updating descendant grants: %w", err)
-				}
-				break
-			}
-
-			// Add the source entitlement as a source to all descendant grants.
-			grantsToUpdate := make([]*v2.Grant, 0)
-			for _, descendantGrant := range descendantGrants {
-				sourcesMap := descendantGrant.GetSources().GetSources()
-				if sourcesMap == nil {
-					sourcesMap = make(map[string]*v2.GrantSources_GrantSource)
-				}
-
-				updated := false
-
-				if len(sourcesMap) == 0 {
-					// If we are already granted this entitlement, make sure to add ourselves as a source.
-					sourcesMap[action.DescendantEntitlementID] = &v2.GrantSources_GrantSource{}
-					updated = true
-				}
-				// Include the source grant as a source.
-				if sourcesMap[action.SourceEntitlementID] == nil {
-					sourcesMap[action.SourceEntitlementID] = &v2.GrantSources_GrantSource{}
-					updated = true
-				}
-
-				if updated {
-					sources := v2.GrantSources_builder{Sources: sourcesMap}.Build()
-					descendantGrant.SetSources(sources)
-					grantsToUpdate = append(grantsToUpdate, descendantGrant)
-				}
-			}
-			newGrants = append(newGrants, grantsToUpdate...)
-
-			newGrants, err = s.putGrantsInChunks(ctx, newGrants, 10000)
-			if err != nil {
-				l.Error("runGrantExpandActions: error updating descendant grants", zap.Error(err))
-				return false, fmt.Errorf("runGrantExpandActions: error updating descendant grants: %w", err)
-			}
-
-			pageToken = resp.GetNextPageToken()
-			if pageToken == "" {
-				break
-			}
-		}
-	}
-
-	_, err = s.putGrantsInChunks(ctx, newGrants, 0)
-	if err != nil {
-		l.Error("runGrantExpandActions: error updating descendant grants", zap.Error(err))
-		return false, fmt.Errorf("runGrantExpandActions: error updating descendant grants: %w", err)
-	}
-
-	// If we have no more pages of work, pop the action off the stack and mark this edge in the graph as done
-	action.PageToken = sourceGrants.GetNextPageToken()
-	if action.PageToken == "" {
-		graph.MarkEdgeExpanded(action.SourceEntitlementID, action.DescendantEntitlementID)
-		graph.Actions = graph.Actions[1:]
-	}
-	return false, nil
-}
-
-func (s *syncer) newExpandedGrant(_ context.Context, descEntitlement *v2.Entitlement, principal *v2.Resource, sourceEntitlementID string) (*v2.Grant, error) {
-	enResource := descEntitlement.GetResource()
-	if enResource == nil {
-		return nil, fmt.Errorf("newExpandedGrant: entitlement has no resource")
-	}
-
-	if principal == nil {
-		return nil, fmt.Errorf("newExpandedGrant: principal is nil")
-	}
-
-	// Add immutable annotation since this function is only called if no direct grant exists
-	var annos annotations.Annotations
-	annos.Update(&v2.GrantImmutable{})
-
-	var sources *v2.GrantSources
-	if sourceEntitlementID != "" {
-		sources = &v2.GrantSources{
-			Sources: map[string]*v2.GrantSources_GrantSource{
-				sourceEntitlementID: {},
-			},
-		}
-	}
-
-	grant := v2.Grant_builder{
-		Id:          fmt.Sprintf("%s:%s:%s", descEntitlement.GetId(), principal.GetId().GetResourceType(), principal.GetId().GetResource()),
-		Entitlement: descEntitlement,
-		Principal:   principal,
-		Sources:     sources,
-		Annotations: annos,
-	}.Build()
-
-	return grant, nil
-}
-
 // expandGrantsForEntitlements expands grants for the given entitlement.
+// This method delegates to the expand.Expander for the actual expansion logic.
 func (s *syncer) expandGrantsForEntitlements(ctx context.Context) error {
 	ctx, span := tracer.Start(ctx, "syncer.expandGrantsForEntitlements")
 	defer span.End()
 
 	l := ctxzap.Extract(ctx)
-
 	graph := s.state.EntitlementGraph(ctx)
-	l = l.With(zap.Int("depth", graph.Depth))
-	l.Debug("expandGrantsForEntitlements: start")
 
 	s.counts.LogExpandProgress(ctx, graph.Actions)
 
-	actionsDone, err := s.runGrantExpandActions(ctx)
+	// Create an expander and run a single step
+	expander := expand.NewExpander(s.store, graph)
+	err := expander.RunSingleStep(ctx)
 	if err != nil {
-		erroredAction := graph.Actions[0]
-		l.Error("expandGrantsForEntitlements: error running graph action", zap.Error(err), zap.Any("action", erroredAction))
-		_ = graph.DeleteEdge(ctx, erroredAction.SourceEntitlementID, erroredAction.DescendantEntitlementID)
-		if !errors.Is(err, sql.ErrNoRows) {
-			return err
+		l.Error("expandGrantsForEntitlements: error during expansion", zap.Error(err))
+		// If max depth exceeded, finish the action before returning the error
+		// to prevent the state machine from getting stuck
+		if errors.Is(err, expand.ErrMaxDepthExceeded) {
+			s.state.FinishAction(ctx)
 		}
-		// Skip action and delete the edge that caused the error.
-		graph.Actions = graph.Actions[1:]
-		if len(graph.Actions) == 0 {
-			actionsDone = true
-		}
-		// TODO: Return a warning? The connector gave a bad entitlement ID to expand.
-	}
-	if !actionsDone {
-		return nil
+		return err
 	}
 
-	if maxDepth == 0 {
-		maxDepth = defaultMaxDepth
-	}
-
-	if int64(graph.Depth) > maxDepth {
-		l.Error(
-			"expandGrantsForEntitlements: exceeded max depth",
-			zap.Int64("max_depth", maxDepth),
-		)
-		s.state.FinishAction(ctx)
-		return fmt.Errorf("expandGrantsForEntitlements: exceeded max depth (%d)", maxDepth)
-	}
-
-	// traverse edges or call some sort of getEntitlements
-	for sourceEntitlementID := range graph.GetExpandableEntitlements(ctx) {
-		for descendantEntitlementID, grantInfo := range graph.GetExpandableDescendantEntitlements(ctx, sourceEntitlementID) {
-			graph.Actions = append(graph.Actions, &expand.EntitlementGraphAction{
-				SourceEntitlementID:     sourceEntitlementID,
-				DescendantEntitlementID: descendantEntitlementID,
-				PageToken:               "",
-				Shallow:                 grantInfo.IsShallow,
-				ResourceTypeIDs:         grantInfo.ResourceTypeIDs,
-			})
-		}
-	}
-
-	if graph.IsExpanded() {
+	if expander.IsDone(ctx) {
 		l.Debug("expandGrantsForEntitlements: graph is expanded")
 		s.state.FinishAction(ctx)
-		return nil
 	}
 
-	graph.Depth++
-	l.Debug("expandGrantsForEntitlements: graph is not expanded")
 	return nil
 }
 
@@ -3093,14 +2977,14 @@ func (s *syncer) Close(ctx context.Context) error {
 
 	var err error
 	if s.store != nil {
-		err = s.store.Close()
+		err = s.store.Close(ctx)
 		if err != nil {
 			return fmt.Errorf("error closing store: %w", err)
 		}
 	}
 
 	if s.externalResourceReader != nil {
-		err = s.externalResourceReader.Close()
+		err = s.externalResourceReader.Close(ctx)
 		if err != nil {
 			return fmt.Errorf("error closing external resource reader: %w", err)
 		}
