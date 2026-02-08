@@ -7,6 +7,7 @@ type Coupa struct {
 	CoupaClientId string `mapstructure:"coupa-client-id"`
 	CoupaClientSecret string `mapstructure:"coupa-client-secret"`
 	CoupaDomain string `mapstructure:"coupa-domain"`
+	BaseUrl string `mapstructure:"base-url"`
 }
 
 func (c *Coupa) findFieldByTag(tagValue string) (any, bool) {

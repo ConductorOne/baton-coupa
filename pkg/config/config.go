@@ -35,6 +35,10 @@ var (
 		field.WithRequired(true),
 		field.WithDescription("Your Coupa Domain, ex: acme.coupacloud.com"),
 	)
+	BaseURLField = field.StringField(
+		"base-url",
+		field.WithDescription("Override the Coupa API URL (for testing)"),
+	)
 	// ConfigurationFields defines the external configuration required for the
 	// connector to run. Note: these fields can be marked as optional or
 	// required.
@@ -42,6 +46,7 @@ var (
 		ClientIdField,
 		ClientSecretField,
 		CoupaDomain,
+		BaseURLField,
 	}
 )
 

@@ -65,6 +65,7 @@ func New(
 	clientId string,
 	clientSecret string,
 	syncAccountGroups bool,
+	baseURL string,
 ) (*Connector, error) {
 	coupaClient, err := client.New(
 		ctx,
@@ -72,6 +73,7 @@ func New(
 		clientId,
 		clientSecret,
 		syncAccountGroups,
+		baseURL,
 	)
 	if err != nil {
 		return nil, err

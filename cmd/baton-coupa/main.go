@@ -34,6 +34,7 @@ func getConnector(ctx context.Context, cc *cfg.Coupa, connectorOpts *cli.Connect
 		cc.CoupaClientId,
 		cc.CoupaClientSecret,
 		syncAccountGroups,
+		cc.BaseUrl,
 	)
 	if err != nil {
 		return nil, nil, err
