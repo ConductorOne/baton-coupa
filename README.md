@@ -1,7 +1,7 @@
 ![Baton Logo](./docs/images/baton-logo.png)
 
 #
-`baton-coupa` [![Go Reference](https://pkg.go.dev/badge/github.com/conductorone/baton-coupa.svg)](https://pkg.go.dev/github.com/conductorone/baton-coupa) ![main ci](https://github.com/conductorone/baton-coupa/actions/workflows/main.yaml/badge.svg)
+`baton-coupa` [![Go Reference](https://pkg.go.dev/badge/github.com/conductorone/baton-coupa.svg)](https://pkg.go.dev/github.com/conductorone/baton-coupa) ![ci](https://github.com/conductorone/baton-coupa/actions/workflows/ci.yaml/badge.svg) ![verify](https://github.com/conductorone/baton-coupa/actions/workflows/verify.yaml/badge.svg)
 
 `baton-coupa` is a connector for built using the [Baton SDK](https://github.com/conductorone/baton-sdk).
 
