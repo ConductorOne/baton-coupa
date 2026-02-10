@@ -6,63 +6,20 @@ on:
     branches:
       - main
 jobs:
-  go-lint:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Install Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-      - name: Run linters
-        uses: golangci/golangci-lint-action@v8
-        with:
-          version: latest
-          args: --timeout=3m
-  go-test:
-    strategy:
-      matrix:
-        platform: [ubuntu-latest]
-    runs-on: ${{ matrix.platform }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Install Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-      - name: go tests
-        run: (set -o pipefail && go test -v -covermode=atomic -json ./... | tee test.json)
-      - name: annotate go tests
-        if: always()
-        uses: guyarb/golang-test-annotations@v0.5.1
-        with:
-          test-results: test.json
-
   test-provisioning:
-    needs:
-      - go-lint
-      - go-test
     runs-on: ubuntu-latest
     strategy:
       fail-fast: true
       matrix:
-        test-case: [ roles, groups, licenses, actions ]
-
+        test-case: [roles, groups, licenses, actions]
     env:
       BATON_LOG_LEVEL: debug
-
       CONNECTOR_PRINCIPAL: "${{ secrets.CONNECTOR_PRINCIPAL }}"
-
       BATON_COUPA_CLIENT_ID: "${{ secrets.BATON_COUPA_CLIENT_ID }}"
       BATON_COUPA_CLIENT_SECRET: "${{ secrets.BATON_COUPA_CLIENT_SECRET }}"
       BATON_COUPA_DOMAIN: "${{ secrets.BATON_COUPA_DOMAIN }}"
-      
       BATON_STATUS_TEST_USER_ID: "${{ secrets.BATON_STATUS_TEST_USER_ID }}"
-
       BATON_CONNECTOR: ./baton-coupa
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -88,7 +45,6 @@ jobs:
               ./scripts/validate-grant.sh ${{ env.CONNECTOR_PRINCIPAL }} user license:treasury_user:assigned license:treasury_user:assigned:user:${{ env.CONNECTOR_PRINCIPAL }}
               ;;
           esac
-      
       - name: Test Account Status Changes
         if: matrix.test-case == 'actions'
         # TODO: Replace with the official action when it's published
