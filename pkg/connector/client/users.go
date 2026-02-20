@@ -11,6 +11,7 @@ import (
 )
 
 // UpdateUser updates the user's active status.
+//nolint:revive // long URL
 // https://compass.coupa.com/en-us/products/total-spend-management-platform/integration-playbooks-and-resources/other-integration-playbooks/erp-integration-adapters/integration-scenarios/1.-user-integration-scenarios-(optional)/1.4-deactivate-a-user
 func (c *Client) UpdateUser(
 	ctx context.Context,

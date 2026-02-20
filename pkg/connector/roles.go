@@ -261,6 +261,7 @@ func (o *roleBuilder) Revoke(ctx context.Context, grant *v2.Grant) (annotations.
 
 	// Clear all roles
 	// Removing a role is a two-step process where you first remove all the roles from the user and then put back the desired roles
+	//nolint:revive // long URL
 	// https://compass.coupa.com/en-us/products/core-platform/integration-playbooks-and-resources/other-integration-playbooks/erp-integration-adapters/integration-scenarios/1.-user-integration-scenarios-(optional)/1.7-remove-a-role-from-a-user
 	_, _, err = o.client.SetRoles(ctx, userId, make([]int, 0))
 	if err != nil {
