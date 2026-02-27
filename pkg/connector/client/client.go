@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 
@@ -123,14 +124,27 @@ func (c *Client) Initialize(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	c.readOnlyToken = rtoken.AccessToken
 
-	rwtoken, err := c.readWriteTokenSource.Token()
-	if err != nil {
-		return err
+	if c.readWriteTokenSource != nil {
+		rwtoken, err := c.readWriteTokenSource.Token()
+		if err != nil {
+			logger.Warn("baton-coupa: failed to obtain read-write token; provisioning will be unavailable", zap.Error(err))
+		} else {
+			c.readWriteToken = rwtoken.AccessToken
+		}
 	}
 
-	c.readOnlyToken = rtoken.AccessToken
-	c.readWriteToken = rwtoken.AccessToken
 	c.initialized = true
+	return nil
+}
+
+// EnsureReadWriteToken returns an error if the read-write token was not
+// successfully acquired during initialization. Write operations should call
+// this before proceeding.
+func (c *Client) EnsureReadWriteToken() error {
+	if c.readWriteToken == "" {
+		return fmt.Errorf("baton-coupa: read-write token is not available; ensure the OAuth2 client has write scopes granted")
+	}
 	return nil
 }

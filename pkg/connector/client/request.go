@@ -96,6 +96,10 @@ func (c *Client) doRestRequest(
 	*v2.RateLimitDescription,
 	error,
 ) {
+	if err := c.EnsureReadWriteToken(); err != nil {
+		return nil, nil, err
+	}
+
 	l := ctxzap.Extract(ctx)
 
 	options := []uhttp.RequestOption{
