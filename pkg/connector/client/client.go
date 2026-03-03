@@ -115,7 +115,6 @@ func (c *Client) Query(
 func (c *Client) Initialize(ctx context.Context) error {
 	logger := ctxzap.Extract(ctx)
 	if c.initialized {
-		logger.Debug("Coupa client already initialized")
 		return nil
 	}
 	logger.Debug("Initializing Coupa client")
