@@ -1,63 +1,63 @@
 {
-  "@type":  "type.googleapis.com/c1.connector.v2.ConnectorCapabilities",
-  "resourceTypeCapabilities":  [
+  "@type": "type.googleapis.com/c1.connector.v2.ConnectorCapabilities",
+  "resourceTypeCapabilities": [
     {
-      "resourceType":  {
-        "id":  "group",
-        "displayName":  "group",
-        "traits":  [
+      "resourceType": {
+        "id": "group",
+        "displayName": "group",
+        "traits": [
           "TRAIT_GROUP"
         ]
       },
-      "capabilities":  [
+      "capabilities": [
         "CAPABILITY_SYNC",
         "CAPABILITY_PROVISION"
       ],
-      "permissions":  {}
+      "permissions": {}
     },
     {
-      "resourceType":  {
-        "id":  "license",
-        "displayName":  "license"
+      "resourceType": {
+        "id": "license",
+        "displayName": "license"
       },
-      "capabilities":  [
+      "capabilities": [
         "CAPABILITY_SYNC",
         "CAPABILITY_PROVISION"
       ],
-      "permissions":  {}
+      "permissions": {}
     },
     {
-      "resourceType":  {
-        "id":  "role",
-        "displayName":  "role",
-        "traits":  [
+      "resourceType": {
+        "id": "role",
+        "displayName": "role",
+        "traits": [
           "TRAIT_ROLE"
         ]
       },
-      "capabilities":  [
+      "capabilities": [
         "CAPABILITY_SYNC",
         "CAPABILITY_PROVISION"
       ],
-      "permissions":  {}
+      "permissions": {}
     },
     {
-      "resourceType":  {
-        "id":  "user",
-        "displayName":  "User",
-        "traits":  [
+      "resourceType": {
+        "id": "user",
+        "displayName": "User",
+        "traits": [
           "TRAIT_USER"
         ]
       },
-      "capabilities":  [
+      "capabilities": [
         "CAPABILITY_SYNC"
       ],
-      "permissions":  {}
+      "permissions": {}
     }
   ],
-  "connectorCapabilities":  [
+  "connectorCapabilities": [
     "CAPABILITY_PROVISION",
     "CAPABILITY_SYNC",
     "CAPABILITY_ACTIONS"
   ],
-  "credentialDetails":  {}
+  "credentialDetails": {}
 }
