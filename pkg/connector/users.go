@@ -170,7 +170,7 @@ func (o *userBuilder) CreateAccount(
 		return nil, nil, nil, fmt.Errorf("baton-coupa: email is required")
 	}
 
-	// Extract optional first/last name from the profile if available
+	// Extract first/last name from the profile if available
 	var firstname, lastname string
 	if profile := accountInfo.GetProfile(); profile != nil {
 		if fn := profile.GetFields()["firstname"]; fn != nil {
