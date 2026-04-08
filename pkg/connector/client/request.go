@@ -18,7 +18,8 @@ import (
 )
 
 // coupaAPIError represents a structured error response from the Coupa API.
-// Example: {"errors":{"user":["First Name can't be blank","Last Name can't be blank"],"warnings":null}}
+//
+//	Example: {"errors":{"user":["First Name can't be blank","Last Name can't be blank"],"warnings":null}}
 type coupaAPIError struct {
 	Errors map[string][]string `json:"errors"`
 }
