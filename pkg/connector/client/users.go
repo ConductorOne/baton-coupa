@@ -57,7 +57,6 @@ func (c *Client) UpdateUser(
 }
 
 // CreateUser creates a new user in Coupa.
-//nolint:revive // long URL
 // https://compass.coupa.com/en-us/products/product-documentation/integration-technical-documentation/the-coupa-core-api/resources/reference-data-resources/users-api-(users)
 func (c *Client) CreateUser(
 	ctx context.Context,
