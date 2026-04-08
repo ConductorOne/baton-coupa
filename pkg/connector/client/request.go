@@ -41,7 +41,8 @@ func parseAPIError(statusCode int, body []byte) error {
 	return fmt.Errorf("baton-coupa: API error (%d): %s", statusCode, string(body))
 }
 
-// WithBearerToken - TODO(marcos): move this function to `baton-sdk`.
+// WithBearerToken adds an Authorization header with a Bearer token.
+// TODO(marcos): move this function to `baton-sdk`.
 func WithBearerToken(token string) uhttp.RequestOption {
 	return uhttp.WithHeader("Authorization", fmt.Sprintf("Bearer %s", token))
 }
