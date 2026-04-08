@@ -89,7 +89,7 @@ func (c *Client) CreateUser(
 
 	url := c.baseUrl.JoinPath(createUserPath)
 
-	_, rateLimit, err := c.doRestRequest(
+	response, rateLimit, err := c.doRestRequest(
 		ctx,
 		http.MethodPost,
 		url,
@@ -101,6 +101,8 @@ func (c *Client) CreateUser(
 		l.Error("CreateUser request failed", zap.Error(err))
 		return nil, rateLimit, err
 	}
+
+	defer response.Body.Close()
 
 	return &userResponse, rateLimit, nil
 }
