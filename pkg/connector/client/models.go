@@ -123,3 +123,24 @@ type UpdateUserResponse struct {
 	Fullname string `json:"fullname"`
 	Active   bool   `json:"active"`
 }
+
+// CreateUserRequest represents the request body for creating a user in Coupa.
+// Reference: https://compass.coupa.com/en-us/products/product-documentation/integration-technical-documentation/the-coupa-core-api/resources/reference-data-resources/users-api-(users)
+type CreateUserRequest struct {
+	Login     string `json:"login"`
+	Email     string `json:"email"`
+	Firstname string `json:"firstname,omitempty"`
+	Lastname  string `json:"lastname,omitempty"`
+	Active    bool   `json:"active"`
+}
+
+// CreateUserResponse represents the response from creating a user in Coupa.
+type CreateUserResponse struct {
+	ID        int    `json:"id"`
+	Login     string `json:"login"`
+	Email     string `json:"email"`
+	Firstname string `json:"firstname"`
+	Lastname  string `json:"lastname"`
+	Fullname  string `json:"fullname"`
+	Active    bool   `json:"active"`
+}

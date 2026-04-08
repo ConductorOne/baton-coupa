@@ -55,3 +55,55 @@ func (c *Client) UpdateUser(
 
 	return &userResponse, rateLimit, nil
 }
+
+// CreateUser creates a new user in Coupa.
+//nolint:revive // long URL
+// https://compass.coupa.com/en-us/products/product-documentation/integration-technical-documentation/the-coupa-core-api/resources/reference-data-resources/users-api-(users)
+func (c *Client) CreateUser(
+	ctx context.Context,
+	login string,
+	email string,
+	firstname string,
+	lastname string,
+) (
+	*CreateUserResponse,
+	*v2.RateLimitDescription,
+	error,
+) {
+	l := ctxzap.Extract(ctx)
+
+	err := c.Initialize(ctx)
+	if err != nil {
+		l.Error("Failed to initialize client", zap.Error(err))
+		return nil, nil, err
+	}
+
+	request := CreateUserRequest{
+		Login:     login,
+		Email:     email,
+		Firstname: firstname,
+		Lastname:  lastname,
+		Active:    true,
+	}
+
+	var userResponse CreateUserResponse
+
+	url := c.baseUrl.JoinPath(createUserPath)
+
+	response, rateLimit, err := c.doRestRequest(
+		ctx,
+		http.MethodPost,
+		url,
+		request,
+		&userResponse,
+	)
+
+	if err != nil {
+		l.Error("CreateUser request failed", zap.Error(err))
+		return nil, rateLimit, err
+	}
+
+	defer response.Body.Close()
+
+	return &userResponse, rateLimit, nil
+}
