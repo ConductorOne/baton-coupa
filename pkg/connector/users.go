@@ -30,6 +30,11 @@ func userResource(user *client.User, parentResourceID *v2.ResourceId) (*v2.Resou
 		status = v2.UserTrait_Status_STATUS_ENABLED
 	}
 
+	login := user.Email
+	if user.Login != "" {
+		login = user.Login
+	}
+
 	return resourceSdk.NewUserResource(
 		user.Fullname,
 		userResourceType,
@@ -40,13 +45,17 @@ func userResource(user *client.User, parentResourceID *v2.ResourceId) (*v2.Resou
 			resourceSdk.WithUserProfile(
 				map[string]interface{}{
 					"id":        user.ID,
+					"login":     login,
 					"email":     user.Email,
 					"full_name": user.Fullname,
 					"active":    user.Active,
 				}),
-			resourceSdk.WithUserLogin(user.Email),
+			resourceSdk.WithUserLogin(login),
 		},
 		resourceSdk.WithParentResourceID(parentResourceID),
+		resourceSdk.WithExternalID(&v2.ExternalId{
+			Id: strconv.Itoa(user.ID),
+		}),
 	)
 }
 
@@ -196,6 +205,7 @@ func (o *userBuilder) CreateAccount(
 	// Create the resource for the newly created user
 	newUser := &client.User{
 		ID:       userResponse.ID,
+		Login:    userResponse.Login,
 		Email:    userResponse.Email,
 		Fullname: userResponse.Fullname,
 		Active:   userResponse.Active,

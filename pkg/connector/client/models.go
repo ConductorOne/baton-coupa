@@ -45,6 +45,7 @@ type LicenseGrantsQueryResponse struct {
 
 type User struct {
 	ID       int    `json:"id"`
+	Login    string `json:"login"`
 	Email    string `json:"email"`
 	Fullname string `json:"fullname"`
 	Active   bool   `json:"active"`
