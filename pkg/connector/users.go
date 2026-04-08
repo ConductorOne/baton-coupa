@@ -2,11 +2,13 @@ package connector
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 
 	"github.com/conductorone/baton-coupa/pkg/connector/client"
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
 	"github.com/conductorone/baton-sdk/pkg/annotations"
+	"github.com/conductorone/baton-sdk/pkg/connectorbuilder"
 	"github.com/conductorone/baton-sdk/pkg/pagination"
 	resourceSdk "github.com/conductorone/baton-sdk/pkg/types/resource"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
@@ -28,6 +30,11 @@ func userResource(user *client.User, parentResourceID *v2.ResourceId) (*v2.Resou
 		status = v2.UserTrait_Status_STATUS_ENABLED
 	}
 
+	login := user.Email
+	if user.Login != "" {
+		login = user.Login
+	}
+
 	return resourceSdk.NewUserResource(
 		user.Fullname,
 		userResourceType,
@@ -38,13 +45,17 @@ func userResource(user *client.User, parentResourceID *v2.ResourceId) (*v2.Resou
 			resourceSdk.WithUserProfile(
 				map[string]interface{}{
 					"id":        user.ID,
+					"login":     login,
 					"email":     user.Email,
 					"full_name": user.Fullname,
 					"active":    user.Active,
 				}),
-			resourceSdk.WithUserLogin(user.Email),
+			resourceSdk.WithUserLogin(login),
 		},
 		resourceSdk.WithParentResourceID(parentResourceID),
+		resourceSdk.WithExternalID(&v2.ExternalId{
+			Id: strconv.Itoa(user.ID),
+		}),
 	)
 }
 
@@ -119,6 +130,116 @@ func (o *userBuilder) Grants(
 	error,
 ) {
 	return nil, "", nil, nil
+}
+
+// CreateAccount creates a new user account in Coupa.
+// Implements the AccountManagerLimited interface.
+func (o *userBuilder) CreateAccount(
+	ctx context.Context,
+	accountInfo *v2.AccountInfo,
+	credentialOptions *v2.LocalCredentialOptions,
+) (
+	connectorbuilder.CreateAccountResponse,
+	[]*v2.PlaintextData,
+	annotations.Annotations,
+	error,
+) {
+	l := ctxzap.Extract(ctx)
+
+	if accountInfo == nil {
+		return nil, nil, nil, fmt.Errorf("baton-coupa: account info is required")
+	}
+
+	login := accountInfo.GetLogin()
+	if login == "" {
+		return nil, nil, nil, fmt.Errorf("baton-coupa: login is required")
+	}
+
+	// Get the primary email from the account info
+	var email string
+	for _, e := range accountInfo.GetEmails() {
+		if e.GetIsPrimary() {
+			email = e.GetAddress()
+			break
+		}
+	}
+	if email == "" && len(accountInfo.GetEmails()) > 0 {
+		email = accountInfo.GetEmails()[0].GetAddress()
+	}
+	if email == "" {
+		return nil, nil, nil, fmt.Errorf("baton-coupa: email is required")
+	}
+
+	// Extract first/last name from the profile if available
+	var firstname, lastname string
+	if profile := accountInfo.GetProfile(); profile != nil {
+		if fn := profile.GetFields()["firstname"]; fn != nil {
+			firstname = fn.GetStringValue()
+		}
+		if ln := profile.GetFields()["lastname"]; ln != nil {
+			lastname = ln.GetStringValue()
+		}
+	}
+
+	l.Debug("creating user account",
+		zap.String("login", login),
+		zap.String("email", email),
+		zap.String("firstname", firstname),
+		zap.String("lastname", lastname),
+	)
+
+	annos := annotations.New()
+	userResponse, rateLimit, err := o.client.CreateUser(ctx, login, email, firstname, lastname)
+	annos.WithRateLimiting(rateLimit)
+	if err != nil {
+		l.Error("failed to create user", zap.Error(err))
+		return nil, nil, annos, fmt.Errorf("baton-coupa: failed to create user: %w", err)
+	}
+
+	l.Info("user created successfully",
+		zap.Int("user_id", userResponse.ID),
+		zap.String("login", userResponse.Login),
+		zap.String("email", userResponse.Email),
+	)
+
+	// Create the resource for the newly created user
+	newUser := &client.User{
+		ID:       userResponse.ID,
+		Login:    userResponse.Login,
+		Email:    userResponse.Email,
+		Fullname: userResponse.Fullname,
+		Active:   userResponse.Active,
+	}
+
+	resource, err := userResource(newUser, nil)
+	if err != nil {
+		return nil, nil, annos, fmt.Errorf("baton-coupa: failed to create user resource: %w", err)
+	}
+
+	result := v2.CreateAccountResponse_SuccessResult_builder{
+		Resource:              resource,
+		IsCreateAccountResult: true,
+	}.Build()
+
+	return result, nil, annos, nil
+}
+
+// CreateAccountCapabilityDetails returns the capability details for account creation.
+// Implements the AccountManagerLimited interface.
+func (o *userBuilder) CreateAccountCapabilityDetails(
+	ctx context.Context,
+) (
+	*v2.CredentialDetailsAccountProvisioning,
+	annotations.Annotations,
+	error,
+) {
+	// Coupa uses SSO/external authentication, so we indicate no password is needed
+	return &v2.CredentialDetailsAccountProvisioning{
+		SupportedCredentialOptions: []v2.CapabilityDetailCredentialOption{
+			v2.CapabilityDetailCredentialOption_CAPABILITY_DETAIL_CREDENTIAL_OPTION_NO_PASSWORD,
+		},
+		PreferredCredentialOption: v2.CapabilityDetailCredentialOption_CAPABILITY_DETAIL_CREDENTIAL_OPTION_NO_PASSWORD,
+	}, nil, nil
 }
 
 func newUserBuilder(ctx context.Context, client *client.Client) *userBuilder {

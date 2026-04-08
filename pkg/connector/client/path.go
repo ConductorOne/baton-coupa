@@ -17,4 +17,7 @@ const (
 
 	// updateUserPath set user id in the path.
 	updateUserPath = `/api/users/%d`
+
+	// createUserPath is the path for creating a new user.
+	createUserPath = `/api/users`
 )
