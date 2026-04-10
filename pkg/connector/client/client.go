@@ -53,12 +53,13 @@ func New(
 	}
 
 	var baseUrl *url.URL
-	if baseURLOverride != "" {
+	switch {
+	case baseURLOverride != "":
 		baseUrl, err = url.Parse(baseURLOverride)
 		if err != nil {
 			return nil, err
 		}
-	} else {
+	default:
 		normalizedUrl, err := config.NormalizeCoupaURL(instanceUrl)
 		if err != nil {
 			return nil, err
