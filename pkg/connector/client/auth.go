@@ -10,7 +10,6 @@ import (
 
 var (
 	ScopesReadOnly = []string{
-		"core.accounting.read",
 		"core.business_entity.read",
 		"core.common.read",
 		"core.user_group.read",
@@ -21,10 +20,20 @@ var (
 	}
 	ScopesReadWrite = append(
 		ScopesReadOnly,
-		"core.accounting.write",
 		"core.user_group.write",
 		"core.user.write",
 	)
+
+	// ScopesAccounting are the additional OAuth scopes required for
+	// billing account sync. Customers must grant these scopes on their
+	// Coupa OAuth client to use billing account features.
+	// If the OAuth client does not have these scopes, billing account
+	// sync will not work, but the rest of the connector will function
+	// normally.
+	ScopesAccounting = []string{
+		"core.accounting.read",
+		"core.accounting.write",
+	}
 )
 
 func getTokenSource(
