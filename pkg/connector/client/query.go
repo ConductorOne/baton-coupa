@@ -56,8 +56,31 @@ const (
 `
 
 	getUserGroups = `query getUsers {
-	users(query: "id=%d") { 
+	users(query: "id=%d") {
 		id userGroups { id name description }
+	}
+}
+`
+
+	getAccountsQuery = `query getAccounts {
+	accounts(query: "%s") {
+		id
+		name
+		code
+		active
+		accountType
+	}
+}`
+
+	getAccountGrantListQuery = `query getAccountGrants {
+	users(query: "account[id]=%s%s") {
+		id
+	}
+}`
+
+	getUserAccountsQuery = `query getUsers {
+	users(query: "id=%d") {
+		id account { id name code }
 	}
 }
 `
@@ -108,4 +131,16 @@ func GetUserRoles(userId int) string {
 
 func GetUserGroups(userId int) string {
 	return fmt.Sprintf(getUserGroups, userId)
+}
+
+func AccountsQuery(pg string) string {
+	return fmt.Sprintf(getAccountsQuery, pagination(pg))
+}
+
+func AccountGrantQuery(accountID string, pg string) string {
+	return fmt.Sprintf(getAccountGrantListQuery, accountID, appendedPagination(pg))
+}
+
+func GetUserAccounts(userId int) string {
+	return fmt.Sprintf(getUserAccountsQuery, userId)
 }

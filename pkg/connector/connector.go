@@ -24,6 +24,7 @@ func (d *Connector) ResourceSyncers(ctx context.Context) []connectorbuilder.Reso
 		newGroupBuilder(ctx, d.client),
 		newRoleBuilder(ctx, d.client),
 		newLicenseBuilder(ctx, d.client),
+		newBillingAccountBuilder(ctx, d.client),
 	}
 }
 
@@ -37,7 +38,7 @@ func (d *Connector) Asset(ctx context.Context, asset *v2.AssetRef) (string, io.R
 func (d *Connector) Metadata(ctx context.Context) (*v2.ConnectorMetadata, error) {
 	return &v2.ConnectorMetadata{
 		DisplayName: "Coupa Connector",
-		Description: "Connector syncing Coupa users, groups, roles, and licenses",
+		Description: "Connector syncing Coupa users, groups, roles, licenses, and billing accounts",
 	}, nil
 }
 

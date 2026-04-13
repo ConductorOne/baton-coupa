@@ -15,6 +15,9 @@ const (
 		`"riskAssessUser","sourcingUser","spendGuardUser","supplyChainUser",` +
 		`"travelUser","treasuryUser"]`
 
+	// setAccountPath set user id in the path.
+	setAccountPath = `/api/users/%d?fields=["id",{"account":["id","name","code"]}]`
+
 	// updateUserPath set user id in the path.
 	updateUserPath = `/api/users/%d`
 
