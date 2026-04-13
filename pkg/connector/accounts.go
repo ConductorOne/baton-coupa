@@ -68,7 +68,15 @@ func (o *accountBuilder) List(
 	)
 	outputAnnotations.WithRateLimiting(ratelimitData)
 	if err != nil {
-		return nil, "", outputAnnotations, err
+		// The Coupa instance may not expose accounts via GraphQL or the
+		// OAuth client may lack core.accounting.read scope. Log the
+		// error and return an empty list so the rest of the sync
+		// continues.
+		logger.Warn(
+			"baton-coupa: failed to list accounts; billing account sync may require core.accounting.read scope",
+			zap.Error(err),
+		)
+		return nil, "", outputAnnotations, nil
 	}
 	defer response.Body.Close()
 
@@ -146,7 +154,12 @@ func (o *accountBuilder) Grants(
 	)
 	outputAnnotations.WithRateLimiting(ratelimitData)
 	if err != nil {
-		return nil, "", outputAnnotations, err
+		logger.Warn(
+			"baton-coupa: failed to query account grants",
+			zap.String("account_id", accountId),
+			zap.Error(err),
+		)
+		return nil, "", outputAnnotations, nil
 	}
 	defer response.Body.Close()
 
