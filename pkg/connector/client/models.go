@@ -69,6 +69,37 @@ type License struct {
 	Description string
 }
 
+type Account struct {
+	ID     int    `json:"id"`
+	Name   string `json:"name"`
+	Code   string `json:"code"`
+	Active bool   `json:"active"`
+}
+
+type AccountsQueryResponse struct {
+	Accounts []*Account `json:"accounts"`
+}
+
+type AccountGrantsQueryResponse struct {
+	Users []struct {
+		Id int `json:"id"`
+	} `json:"users"`
+}
+
+type UserAccounts struct {
+	Id             int      `json:"id"`
+	DefaultAccount *Account `json:"defaultAccount"`
+}
+
+type UserAccountsResponse struct {
+	Users []UserAccounts `json:"users"`
+}
+
+type UserAccountPutResponse struct {
+	ResourceId
+	DefaultAccount *Account `json:"default-account"`
+}
+
 type UserRoles struct {
 	Id    int    `json:"id"`
 	Roles []Role `json:"roles"`

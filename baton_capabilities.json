@@ -42,6 +42,17 @@
     },
     {
       "resourceType":  {
+        "id":  "account",
+        "displayName":  "Billing Account"
+      },
+      "capabilities":  [
+        "CAPABILITY_SYNC",
+        "CAPABILITY_PROVISION"
+      ],
+      "permissions":  {}
+    },
+    {
+      "resourceType":  {
         "id":  "user",
         "displayName":  "User",
         "traits":  [
