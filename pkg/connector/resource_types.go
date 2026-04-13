@@ -27,3 +27,8 @@ var licenseResourceType = &v2.ResourceType{
 	Id:          "license",
 	DisplayName: "license",
 }
+
+var accountResourceType = &v2.ResourceType{
+	Id:          "account",
+	DisplayName: "Billing Account",
+}
