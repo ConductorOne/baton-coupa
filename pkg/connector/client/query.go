@@ -49,18 +49,40 @@ const (
 }`
 
 	getUserRoles = `query getUsers {
-	users(query: "id=%d") { 
+	users(query: "id=%d") {
 		id roles { id name description }
-	} 
+	}
 }
 `
 
 	getUserGroups = `query getUsers {
-	users(query: "id=%d") { 
+	users(query: "id=%d") {
 		id userGroups { id name description }
 	}
 }
 `
+
+	getAccountGroupsQuery = `query getAccountGroups {
+	accountGroups(query: "%s") {
+		id
+		name
+	}
+}`
+
+	getUserAccountGroupsQuery = `query getUserAccountGroups {
+	users(query: "type[blank]=true%s") {
+		id
+		accountGroups {
+			id
+		}
+	}
+}`
+
+	getUserAccountGroupsByIDQuery = `query getUserAccountGroups {
+	users(query: "id=%d") {
+		id accountGroups { id }
+	}
+}`
 )
 
 func pagination(pg string) string {
@@ -108,4 +130,16 @@ func GetUserRoles(userId int) string {
 
 func GetUserGroups(userId int) string {
 	return fmt.Sprintf(getUserGroups, userId)
+}
+
+func AccountGroupsQuery(pg string) string {
+	return fmt.Sprintf(getAccountGroupsQuery, pagination(pg))
+}
+
+func UserAccountGroupsQuery(pg string) string {
+	return fmt.Sprintf(getUserAccountGroupsQuery, appendedPagination(pg))
+}
+
+func GetUserAccountGroupsByID(userId int) string {
+	return fmt.Sprintf(getUserAccountGroupsByIDQuery, userId)
 }

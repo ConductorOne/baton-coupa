@@ -38,6 +38,7 @@ func New(
 	instanceUrl string,
 	clientId string,
 	clientSecret string,
+	syncAccountGroups bool,
 ) (*Client, error) {
 	httpClient, err := uhttp.NewClient(
 		ctx,
@@ -66,19 +67,25 @@ func New(
 	}
 
 	if clientId != "" && clientSecret != "" {
+		readOnlyScopes := ScopesReadOnly
+		readWriteScopes := ScopesReadWrite
+		if syncAccountGroups {
+			readOnlyScopes = append(readOnlyScopes, ScopeAccountingRead)
+			readWriteScopes = append(readWriteScopes, ScopeAccountingRead)
+		}
 		coupaClient.ReadOnlyTokenSource = getTokenSource(
 			ctx,
 			baseUrl,
 			clientId,
 			clientSecret,
-			ScopesReadOnly...,
+			readOnlyScopes...,
 		)
 		coupaClient.readWriteTokenSource = getTokenSource(
 			ctx,
 			baseUrl,
 			clientId,
 			clientSecret,
-			ScopesReadWrite...,
+			readWriteScopes...,
 		)
 	}
 

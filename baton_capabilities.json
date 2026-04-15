@@ -53,6 +53,17 @@
         "CAPABILITY_ACCOUNT_PROVISIONING"
       ],
       "permissions": {}
+    },
+    {
+      "resourceType": {
+        "id": "account_group",
+        "displayName": "Account Group"
+      },
+      "capabilities": [
+        "CAPABILITY_SYNC",
+        "CAPABILITY_PROVISION"
+      ],
+      "permissions": {}
     }
   ],
   "connectorCapabilities": [

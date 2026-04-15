@@ -114,6 +114,33 @@ type UserLicenseResponse struct {
 	TreasuryUser    bool `json:"treasury-user"`
 }
 
+type AccountGroup struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+}
+
+type AccountGroupsQueryResponse struct {
+	AccountGroups []*AccountGroup `json:"accountGroups"`
+}
+
+type UserWithAccountGroups struct {
+	Id            int `json:"id"`
+	AccountGroups []struct {
+		Id int `json:"id"`
+	} `json:"accountGroups"`
+}
+
+type UserAccountGroupsQueryResponse struct {
+	Users []UserWithAccountGroups `json:"users"`
+}
+
+// UserAccountGroupsApiResponse is the REST response from PUT /api/users/{id}
+// when updating account groups.
+type UserAccountGroupsApiResponse struct {
+	Id            int            `json:"id"`
+	AccountGroups []AccountGroup `json:"account-groups"`
+}
+
 type UpdateUserRequest struct {
 	Active bool `json:"active"`
 }

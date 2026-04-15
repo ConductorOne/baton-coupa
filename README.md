@@ -43,6 +43,10 @@ baton resources
 `baton-coupa` will pull down information about the following resources:
 
 - Users
+- Groups
+- Roles
+- Licenses
+- Account Groups (opt-in, see `--sync-account-groups`)
 
 # Actions
 
@@ -115,6 +119,7 @@ Flags:
       --log-level string             The log level: debug, info, warn, error ($BATON_LOG_LEVEL) (default "info")
   -p, --provisioning                 This must be set in order for provisioning actions to be enabled ($BATON_PROVISIONING)
       --skip-full-sync               This must be set to skip a full sync ($BATON_SKIP_FULL_SYNC)
+      --sync-account-groups          Enable syncing of Coupa Account Groups. Requires the core.accounting.read OAuth scope on the Coupa OAuth client ($BATON_SYNC_ACCOUNT_GROUPS)
       --ticketing                    This must be set to enable ticketing support ($BATON_TICKETING)
   -v, --version                      version for baton-coupa
 

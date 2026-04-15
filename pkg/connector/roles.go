@@ -10,7 +10,6 @@ import (
 	"github.com/conductorone/baton-coupa/pkg/connector/client"
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
 	"github.com/conductorone/baton-sdk/pkg/annotations"
-	"github.com/conductorone/baton-sdk/pkg/pagination"
 	"github.com/conductorone/baton-sdk/pkg/types/entitlement"
 	"github.com/conductorone/baton-sdk/pkg/types/grant"
 	resourceSdk "github.com/conductorone/baton-sdk/pkg/types/resource"
@@ -47,15 +46,14 @@ func roleResource(role *client.Role, parentResourceID *v2.ResourceId) (*v2.Resou
 func (o *roleBuilder) List(
 	ctx context.Context,
 	parentResourceID *v2.ResourceId,
-	pToken *pagination.Token,
+	opts resourceSdk.SyncOpAttrs,
 ) (
 	[]*v2.Resource,
-	string,
-	annotations.Annotations,
+	*resourceSdk.SyncOpResults,
 	error,
 ) {
 	logger := ctxzap.Extract(ctx)
-	logger.Debug("Starting Roles List", zap.String("token", pToken.Token))
+	logger.Debug("Starting Roles List", zap.String("token", opts.PageToken.Token))
 
 	outputResources := make([]*v2.Resource, 0)
 	var outputAnnotations annotations.Annotations
@@ -63,12 +61,12 @@ func (o *roleBuilder) List(
 	var target client.RolesQueryResponse
 	response, ratelimitData, err := o.client.Query(
 		ctx,
-		client.RolesQuery(pToken.Token),
+		client.RolesQuery(opts.PageToken.Token),
 		&target,
 	)
 	outputAnnotations.WithRateLimiting(ratelimitData)
 	if err != nil {
-		return nil, "", outputAnnotations, err
+		return nil, &resourceSdk.SyncOpResults{Annotations: outputAnnotations}, err
 	}
 	defer response.Body.Close()
 
@@ -76,23 +74,22 @@ func (o *roleBuilder) List(
 	for _, role := range target.Roles {
 		resource, err := roleResource(role, parentResourceID)
 		if err != nil {
-			return nil, "", nil, err
+			return nil, nil, err
 		}
 		outputResources = append(outputResources, resource)
 		lastId = strconv.Itoa(role.ID)
 	}
 
-	return outputResources, lastId, outputAnnotations, nil
+	return outputResources, &resourceSdk.SyncOpResults{NextPageToken: lastId, Annotations: outputAnnotations}, nil
 }
 
 func (o *roleBuilder) Entitlements(
 	_ context.Context,
 	resource *v2.Resource,
-	_ *pagination.Token,
+	_ resourceSdk.SyncOpAttrs,
 ) (
 	[]*v2.Entitlement,
-	string,
-	annotations.Annotations,
+	*resourceSdk.SyncOpResults,
 	error,
 ) {
 	return []*v2.Entitlement{
@@ -107,17 +104,16 @@ func (o *roleBuilder) Entitlements(
 				fmt.Sprintf("%s role in Coupa", resource.DisplayName),
 			),
 		),
-	}, "", nil, nil
+	}, nil, nil
 }
 
 func (o *roleBuilder) Grants(
 	ctx context.Context,
 	resource *v2.Resource,
-	pToken *pagination.Token,
+	opts resourceSdk.SyncOpAttrs,
 ) (
 	[]*v2.Grant,
-	string,
-	annotations.Annotations,
+	*resourceSdk.SyncOpResults,
 	error,
 ) {
 	logger := ctxzap.Extract(ctx)
@@ -127,7 +123,7 @@ func (o *roleBuilder) Grants(
 	logger.Debug(
 		"Starting Roles Grants",
 		zap.String("role_id", roleId),
-		zap.String("token", pToken.Token),
+		zap.String("token", opts.PageToken.Token),
 	)
 
 	outputGrants := make([]*v2.Grant, 0)
@@ -136,12 +132,12 @@ func (o *roleBuilder) Grants(
 	var target client.RoleGrantsQueryResponse
 	response, ratelimitData, err := o.client.Query(
 		ctx,
-		client.RoleGrantQuery(roleId, pToken.Token),
+		client.RoleGrantQuery(roleId, opts.PageToken.Token),
 		&target,
 	)
 	outputAnnotations.WithRateLimiting(ratelimitData)
 	if err != nil {
-		return nil, "", outputAnnotations, err
+		return nil, &resourceSdk.SyncOpResults{Annotations: outputAnnotations}, err
 	}
 	defer response.Body.Close()
 
@@ -161,7 +157,7 @@ func (o *roleBuilder) Grants(
 		lastId = strconv.Itoa(user.Id)
 	}
 
-	return outputGrants, lastId, outputAnnotations, nil
+	return outputGrants, &resourceSdk.SyncOpResults{NextPageToken: lastId, Annotations: outputAnnotations}, nil
 }
 
 func (o *roleBuilder) Grant(ctx context.Context, resource *v2.Resource, entitlement *v2.Entitlement) ([]*v2.Grant, annotations.Annotations, error) {

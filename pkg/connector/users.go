@@ -9,7 +9,6 @@ import (
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
 	"github.com/conductorone/baton-sdk/pkg/annotations"
 	"github.com/conductorone/baton-sdk/pkg/connectorbuilder"
-	"github.com/conductorone/baton-sdk/pkg/pagination"
 	resourceSdk "github.com/conductorone/baton-sdk/pkg/types/resource"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
 	"go.uber.org/zap"
@@ -64,15 +63,14 @@ func userResource(user *client.User, parentResourceID *v2.ResourceId) (*v2.Resou
 func (o *userBuilder) List(
 	ctx context.Context,
 	parentResourceID *v2.ResourceId,
-	pToken *pagination.Token,
+	opts resourceSdk.SyncOpAttrs,
 ) (
 	[]*v2.Resource,
-	string,
-	annotations.Annotations,
+	*resourceSdk.SyncOpResults,
 	error,
 ) {
 	logger := ctxzap.Extract(ctx)
-	logger.Debug("Starting Users List", zap.String("token", pToken.Token))
+	logger.Debug("Starting Users List", zap.String("token", opts.PageToken.Token))
 
 	outputResources := make([]*v2.Resource, 0)
 	var outputAnnotations annotations.Annotations
@@ -80,12 +78,12 @@ func (o *userBuilder) List(
 	var target client.UsersQueryResponse
 	response, rateLimitData, err := o.client.Query(
 		ctx,
-		client.AllUsersQuery(pToken.Token),
+		client.AllUsersQuery(opts.PageToken.Token),
 		&target,
 	)
 	outputAnnotations.WithRateLimiting(rateLimitData)
 	if err != nil {
-		return nil, "", outputAnnotations, err
+		return nil, &resourceSdk.SyncOpResults{Annotations: outputAnnotations}, err
 	}
 	defer response.Body.Close()
 
@@ -95,41 +93,39 @@ func (o *userBuilder) List(
 	for _, user := range target.Users {
 		resource, err := userResource(user, parentResourceID)
 		if err != nil {
-			return nil, "", nil, err
+			return nil, nil, err
 		}
 		outputResources = append(outputResources, resource)
 		lastId = strconv.Itoa(user.ID)
 	}
 
-	return outputResources, lastId, outputAnnotations, nil
+	return outputResources, &resourceSdk.SyncOpResults{NextPageToken: lastId, Annotations: outputAnnotations}, nil
 }
 
 // Entitlements always returns an empty slice for users.
 func (o *userBuilder) Entitlements(
 	_ context.Context,
 	_ *v2.Resource,
-	_ *pagination.Token,
+	_ resourceSdk.SyncOpAttrs,
 ) (
 	[]*v2.Entitlement,
-	string,
-	annotations.Annotations,
+	*resourceSdk.SyncOpResults,
 	error,
 ) {
-	return nil, "", nil, nil
+	return nil, nil, nil
 }
 
 // Grants always returns an empty slice for users since they don't have any entitlements.
 func (o *userBuilder) Grants(
 	_ context.Context,
 	_ *v2.Resource,
-	_ *pagination.Token,
+	_ resourceSdk.SyncOpAttrs,
 ) (
 	[]*v2.Grant,
-	string,
-	annotations.Annotations,
+	*resourceSdk.SyncOpResults,
 	error,
 ) {
-	return nil, "", nil, nil
+	return nil, nil, nil
 }
 
 // CreateAccount creates a new user account in Coupa.
