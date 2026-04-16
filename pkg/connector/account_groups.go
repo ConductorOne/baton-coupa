@@ -117,7 +117,7 @@ func (o *accountGroupBuilder) Grant(ctx context.Context, principal *v2.Resource,
 
 	for _, ag := range user.AccountGroups {
 		if ag.Id == accountGroupIdToAdd {
-			return []*v2.Grant{}, annotations.New(&v2.GrantAlreadyExists{}), nil
+			return nil, annotations.New(&v2.GrantAlreadyExists{}), nil
 		}
 	}
 
@@ -148,6 +148,7 @@ func (o *accountGroupBuilder) Grant(ctx context.Context, principal *v2.Resource,
 	return []*v2.Grant{newGrant}, nil, nil
 }
 
+// Revoke removes an account group from a user
 func (o *accountGroupBuilder) Revoke(ctx context.Context, g *v2.Grant) (annotations.Annotations, error) {
 	logger := ctxzap.Extract(ctx)
 	if g.Principal.Id.ResourceType != userResourceType.Id {

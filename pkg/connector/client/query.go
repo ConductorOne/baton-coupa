@@ -69,15 +69,6 @@ const (
 	}
 }`
 
-	getUserAccountGroupsQuery = `query getUserAccountGroups {
-	users(query: "type[blank]=true%s") {
-		id
-		accountGroups {
-			id
-		}
-	}
-}`
-
 	getUserAccountGroupsByIDQuery = `query getUserAccountGroups {
 	users(query: "id=%d") {
 		id accountGroups { id }
@@ -134,10 +125,6 @@ func GetUserGroups(userId int) string {
 
 func AccountGroupsQuery(pg string) string {
 	return fmt.Sprintf(getAccountGroupsQuery, pagination(pg))
-}
-
-func UserAccountGroupsQuery(pg string) string {
-	return fmt.Sprintf(getUserAccountGroupsQuery, appendedPagination(pg))
 }
 
 func GetUserAccountGroupsByID(userId int) string {
