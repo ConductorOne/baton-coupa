@@ -11,7 +11,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        test-case: [roles, groups, licenses, actions]
+        test-case: [roles, groups, licenses, account_groups, actions]
     env:
       BATON_LOG_LEVEL: debug
       CONNECTOR_PRINCIPAL: "${{ secrets.CONNECTOR_PRINCIPAL }}"
@@ -19,6 +19,7 @@ jobs:
       BATON_COUPA_CLIENT_SECRET: "${{ secrets.BATON_COUPA_CLIENT_SECRET }}"
       BATON_COUPA_DOMAIN: "${{ secrets.BATON_COUPA_DOMAIN }}"
       BATON_STATUS_TEST_USER_ID: "${{ secrets.BATON_STATUS_TEST_USER_ID }}"
+      BATON_ACCOUNT_GROUP_TEST_ID: "${{ secrets.BATON_ACCOUNT_GROUP_TEST_ID }}"
       BATON_CONNECTOR: ./baton-coupa
     steps:
       - name: Checkout code
@@ -43,6 +44,9 @@ jobs:
               ;;
             "licenses")
               ./scripts/validate-grant.sh ${{ env.CONNECTOR_PRINCIPAL }} user license:treasury_user:assigned license:treasury_user:assigned:user:${{ env.CONNECTOR_PRINCIPAL }}
+              ;;
+            "account_groups")
+              ./scripts/validate-grant.sh ${{ env.CONNECTOR_PRINCIPAL }} user account_group:${{ env.BATON_ACCOUNT_GROUP_TEST_ID }}:member account_group:${{ env.BATON_ACCOUNT_GROUP_TEST_ID }}:member:user:${{ env.CONNECTOR_PRINCIPAL }}
               ;;
           esac
       - name: Test Account Status Changes
