@@ -10,6 +10,7 @@ import (
 
 var (
 	ScopesReadOnly = []string{
+		"core.accounting.read",
 		"core.business_entity.read",
 		"core.common.read",
 		"core.user_group.read",
@@ -20,6 +21,7 @@ var (
 	}
 	ScopesReadWrite = append(
 		ScopesReadOnly,
+		"core.accounting.write",
 		"core.user_group.write",
 		"core.user.write",
 	)
