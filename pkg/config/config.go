@@ -35,12 +35,6 @@ var (
 		field.WithRequired(true),
 		field.WithDescription("Your Coupa Domain, ex: acme.coupacloud.com"),
 	)
-	SyncAccountGroupsField = field.BoolField(
-		"sync-account-groups",
-		field.WithDisplayName("Sync Account Groups"),
-		field.WithDescription("Enable syncing of Coupa Account Groups. Requires the core.accounting.read OAuth scope to be granted on the Coupa OAuth client."),
-		field.WithDefaultValue(false),
-	)
 	// ConfigurationFields defines the external configuration required for the
 	// connector to run. Note: these fields can be marked as optional or
 	// required.
@@ -48,7 +42,6 @@ var (
 		ClientIdField,
 		ClientSecretField,
 		CoupaDomain,
-		SyncAccountGroupsField,
 	}
 )
 

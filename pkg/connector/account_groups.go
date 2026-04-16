@@ -44,9 +44,6 @@ func (o *accountGroupBuilder) List(
 	*resourceSdk.SyncOpResults,
 	error,
 ) {
-	logger := ctxzap.Extract(ctx)
-	logger.Debug("Starting Account Groups List", zap.String("token", opts.PageToken.Token))
-
 	outputResources := make([]*v2.Resource, 0)
 	var outputAnnotations annotations.Annotations
 
@@ -94,64 +91,12 @@ func (o *accountGroupBuilder) StaticEntitlements(_ context.Context, _ resourceSd
 	}, nil, nil
 }
 
-func (o *accountGroupBuilder) Grants(
-	ctx context.Context,
-	resource *v2.Resource,
-	opts resourceSdk.SyncOpAttrs,
-) (
-	[]*v2.Grant,
-	*resourceSdk.SyncOpResults,
-	error,
-) {
-	logger := ctxzap.Extract(ctx)
-
-	accountGroupId := resource.Id.Resource
-
-	logger.Debug(
-		"Starting Account Groups Grants",
-		zap.String("account_group_id", accountGroupId),
-		zap.String("token", opts.PageToken.Token),
-	)
-
-	outputGrants := make([]*v2.Grant, 0)
-	var outputAnnotations annotations.Annotations
-
-	// Coupa's GraphQL does not support filtering users by accountGroups[id].
-	// We page through all users selecting their accountGroups and filter client-side.
-	var target client.UserAccountGroupsQueryResponse
-	response, ratelimitData, err := o.client.Query(
-		ctx,
-		client.UserAccountGroupsQuery(opts.PageToken.Token),
-		&target,
-	)
-	outputAnnotations.WithRateLimiting(ratelimitData)
-	if err != nil {
-		return nil, &resourceSdk.SyncOpResults{Annotations: outputAnnotations}, err
-	}
-	defer response.Body.Close()
-
-	lastId := ""
-	for _, user := range target.Users {
-		for _, ag := range user.AccountGroups {
-			if strconv.Itoa(ag.Id) == accountGroupId {
-				outputGrants = append(
-					outputGrants,
-					grant.NewGrant(
-						resource,
-						accountGroupEntitlementName,
-						&v2.ResourceId{
-							ResourceType: userResourceType.Id,
-							Resource:     strconv.Itoa(user.Id),
-						},
-					),
-				)
-				break
-			}
-		}
-		lastId = strconv.Itoa(user.Id)
-	}
-
-	return outputGrants, &resourceSdk.SyncOpResults{NextPageToken: lastId, Annotations: outputAnnotations}, nil
+// Grants is a no-op — account group membership grants are generated from the user
+// builder's Grants() method (one call per user) to avoid the O(account_groups × user_pages)
+// cost of scanning all users for each group. This method is also skipped by the
+// SkipEntitlementsAndGrants annotation on accountGroupResourceType.
+func (o *accountGroupBuilder) Grants(_ context.Context, _ *v2.Resource, _ resourceSdk.SyncOpAttrs) ([]*v2.Grant, *resourceSdk.SyncOpResults, error) {
+	return nil, nil, nil
 }
 
 func (o *accountGroupBuilder) Grant(ctx context.Context, principal *v2.Resource, entitlement *v2.Entitlement) ([]*v2.Grant, annotations.Annotations, error) {

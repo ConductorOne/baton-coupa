@@ -9,16 +9,26 @@ import (
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
 	"github.com/conductorone/baton-sdk/pkg/annotations"
 	"github.com/conductorone/baton-sdk/pkg/connectorbuilder"
+	"github.com/conductorone/baton-sdk/pkg/types/grant"
 	resourceSdk "github.com/conductorone/baton-sdk/pkg/types/resource"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
 	"go.uber.org/zap"
 )
 
 type userBuilder struct {
-	client *client.Client
+	client            *client.Client
+	syncAccountGroups bool
 }
 
-func (o *userBuilder) ResourceType(ctx context.Context) *v2.ResourceType {
+func (o *userBuilder) ResourceType(_ context.Context) *v2.ResourceType {
+	userResourceTypeCopy := userResourceType
+	if o.syncAccountGroups {
+		// If account groups are synced, skip entitlements only
+		userResourceTypeCopy.Annotations = annotations.New(&v2.SkipEntitlements{})
+		return userResourceTypeCopy
+	}
+	// If account groups are not synced, skip entitlements and grants
+	userResourceType.Annotations = annotations.New(&v2.SkipEntitlementsAndGrants{})
 	return userResourceType
 }
 
@@ -115,17 +125,56 @@ func (o *userBuilder) Entitlements(
 	return nil, nil, nil
 }
 
-// Grants always returns an empty slice for users since they don't have any entitlements.
+// Grants returns account group membership grants for this user.
+// Account group grants are generated from the user side to avoid the expensive
+// pattern of fetching all users once per account group.
 func (o *userBuilder) Grants(
-	_ context.Context,
-	_ *v2.Resource,
+	ctx context.Context,
+	resource *v2.Resource,
 	_ resourceSdk.SyncOpAttrs,
 ) (
 	[]*v2.Grant,
 	*resourceSdk.SyncOpResults,
 	error,
 ) {
-	return nil, nil, nil
+	userId, err := strconv.Atoi(resource.Id.Resource)
+	if err != nil {
+		return nil, nil, fmt.Errorf("baton-coupa: invalid user ID %q: %w", resource.Id.Resource, err)
+	}
+
+	var target client.UserAccountGroupsQueryResponse
+	response, ratelimitData, err := o.client.Query(
+		ctx,
+		client.GetUserAccountGroupsByID(userId),
+		&target,
+	)
+	var outputAnnotations annotations.Annotations
+	outputAnnotations.WithRateLimiting(ratelimitData)
+	if err != nil {
+		return nil, &resourceSdk.SyncOpResults{Annotations: outputAnnotations}, err
+	}
+	defer response.Body.Close()
+
+	if len(target.Users) == 0 {
+		return nil, &resourceSdk.SyncOpResults{Annotations: outputAnnotations}, nil
+	}
+
+	user := target.Users[0]
+	outputGrants := make([]*v2.Grant, 0, len(user.AccountGroups))
+	for _, ag := range user.AccountGroups {
+		outputGrants = append(outputGrants, grant.NewGrant(
+			&v2.Resource{
+				Id: &v2.ResourceId{
+					ResourceType: accountGroupResourceType.Id,
+					Resource:     strconv.Itoa(ag.Id),
+				},
+			},
+			accountGroupEntitlementName,
+			resource.Id,
+		))
+	}
+
+	return outputGrants, &resourceSdk.SyncOpResults{Annotations: outputAnnotations}, nil
 }
 
 // CreateAccount creates a new user account in Coupa.
@@ -238,8 +287,9 @@ func (o *userBuilder) CreateAccountCapabilityDetails(
 	}, nil, nil
 }
 
-func newUserBuilder(ctx context.Context, client *client.Client) *userBuilder {
+func newUserBuilder(_ context.Context, client *client.Client, syncAccountGroups bool) *userBuilder {
 	return &userBuilder{
-		client: client,
+		client:            client,
+		syncAccountGroups: syncAccountGroups,
 	}
 }

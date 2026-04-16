@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"slices"
 
 	cfg "github.com/conductorone/baton-coupa/pkg/config"
 	"github.com/conductorone/baton-coupa/pkg/connector"
@@ -26,13 +27,14 @@ func main() {
 	)
 }
 
-func getConnector(ctx context.Context, cc *cfg.Coupa, _ *cli.ConnectorOpts) (connectorbuilder.ConnectorBuilderV2, []connectorbuilder.Opt, error) {
+func getConnector(ctx context.Context, cc *cfg.Coupa, connectorOpts *cli.ConnectorOpts) (connectorbuilder.ConnectorBuilderV2, []connectorbuilder.Opt, error) {
+	syncAccountGroups := slices.Contains(connectorOpts.SyncResourceTypeIDs, connector.AccountGroupResourceTypeID) || len(connectorOpts.SyncResourceTypeIDs) == 0
 	cb, err := connector.New(
 		ctx,
 		cc.CoupaDomain,
 		cc.CoupaClientId,
 		cc.CoupaClientSecret,
-		cc.SyncAccountGroups,
+		syncAccountGroups,
 	)
 	if err != nil {
 		return nil, nil, err

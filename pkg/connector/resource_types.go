@@ -5,14 +5,15 @@ import (
 	"github.com/conductorone/baton-sdk/pkg/annotations"
 )
 
+// AccountGroupResourceTypeID is the stable ID for the account_group resource type.
+// Used by callers to check whether account groups are included in SyncResourceTypeIDs.
+const AccountGroupResourceTypeID = "account_group"
+
 // The user resource type is for all user objects from the database.
 var userResourceType = &v2.ResourceType{
 	Id:          "user",
 	DisplayName: "User",
 	Traits:      []v2.ResourceType_Trait{v2.ResourceType_TRAIT_USER},
-	Annotations: annotations.New(
-		&v2.SkipEntitlementsAndGrants{},
-	),
 }
 
 var groupResourceType = &v2.ResourceType{
@@ -33,9 +34,17 @@ var licenseResourceType = &v2.ResourceType{
 }
 
 var accountGroupResourceType = &v2.ResourceType{
-	Id:          "account_group",
+	Id:          AccountGroupResourceTypeID,
 	DisplayName: "Account Group",
 	Annotations: annotations.New(
-		&v2.SkipEntitlements{},
+		&v2.SkipEntitlementsAndGrants{},
+		&v2.OptInRequired{},
+		&v2.CapabilityPermissions{
+			Permissions: []*v2.CapabilityPermission{
+				{
+					Permission: "core.accounting.read",
+				},
+			},
+		},
 	),
 }

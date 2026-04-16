@@ -1,6 +1,40 @@
 {
-  "@type": "type.googleapis.com/c1.connector.v2.ConnectorCapabilities",
-  "resourceTypeCapabilities": [
+  "@type":  "type.googleapis.com/c1.connector.v2.ConnectorCapabilities",
+  "resourceTypeCapabilities":  [
+    {
+      "resourceType":  {
+        "id":  "account_group",
+        "displayName":  "Account Group",
+        "annotations":  [
+          {
+            "@type":  "type.googleapis.com/c1.connector.v2.SkipEntitlementsAndGrants"
+          },
+          {
+            "@type":  "type.googleapis.com/c1.connector.v2.OptInRequired"
+          },
+          {
+            "@type":  "type.googleapis.com/c1.connector.v2.CapabilityPermissions",
+            "permissions":  [
+              {
+                "permission":  "core.accounting.read"
+              }
+            ]
+          }
+        ]
+      },
+      "capabilities":  [
+        "CAPABILITY_SYNC",
+        "CAPABILITY_PROVISION"
+      ],
+      "permissions":  {
+        "permissions":  [
+          {
+            "permission":  "core.accounting.read"
+          }
+        ]
+      },
+      "optInRequired":  true
+    },
     {
       "resourceType": {
         "id": "group",
@@ -38,7 +72,7 @@
         "CAPABILITY_SYNC",
         "CAPABILITY_PROVISION"
       ],
-      "permissions": {}
+      "permissions":  {}
     },
     {
       "resourceType": {
@@ -46,24 +80,18 @@
         "displayName": "User",
         "traits": [
           "TRAIT_USER"
+        ],
+        "annotations":  [
+          {
+            "@type":  "type.googleapis.com/c1.connector.v2.SkipEntitlements"
+          }
         ]
       },
       "capabilities": [
         "CAPABILITY_SYNC",
         "CAPABILITY_ACCOUNT_PROVISIONING"
       ],
-      "permissions": {}
-    },
-    {
-      "resourceType": {
-        "id": "account_group",
-        "displayName": "Account Group"
-      },
-      "capabilities": [
-        "CAPABILITY_SYNC",
-        "CAPABILITY_PROVISION"
-      ],
-      "permissions": {}
+      "permissions":  {}
     }
   ],
   "connectorCapabilities": [
