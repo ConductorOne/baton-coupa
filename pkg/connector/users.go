@@ -21,15 +21,15 @@ type userBuilder struct {
 }
 
 func (o *userBuilder) ResourceType(_ context.Context) *v2.ResourceType {
-	userResourceTypeCopy := userResourceType
+	rt := userResourceType
+	annos := annotations.Annotations(rt.GetAnnotations())
 	if o.syncAccountGroups {
-		// If account groups are synced, skip entitlements only
-		userResourceTypeCopy.Annotations = annotations.New(&v2.SkipEntitlements{})
-		return userResourceTypeCopy
+		annos.Append(&v2.SkipEntitlements{})
+	} else {
+		annos.Append(&v2.SkipEntitlementsAndGrants{})
 	}
-	// If account groups are not synced, skip entitlements and grants
-	userResourceType.Annotations = annotations.New(&v2.SkipEntitlementsAndGrants{})
-	return userResourceType
+	rt.Annotations = annos
+	return rt
 }
 
 // Create a new connector resource for a Coupa user.
