@@ -148,7 +148,9 @@ func (o *accountGroupBuilder) Grant(ctx context.Context, principal *v2.Resource,
 	return []*v2.Grant{newGrant}, nil, nil
 }
 
-// Revoke removes an account group from a user
+// Revoke removes an account group from a user.
+// Revoking, as with groups and roles, is a two-step process where you first remove all the account groups from the user
+// and then put back the desired account groups.
 func (o *accountGroupBuilder) Revoke(ctx context.Context, g *v2.Grant) (annotations.Annotations, error) {
 	logger := ctxzap.Extract(ctx)
 	if g.Principal.Id.ResourceType != userResourceType.Id {
