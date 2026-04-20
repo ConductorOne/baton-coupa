@@ -20,14 +20,13 @@ type Connector struct {
 
 // ResourceSyncers returns a ResourceSyncerV2 for each resource type that should be synced from the upstream service.
 func (d *Connector) ResourceSyncers(ctx context.Context) []connectorbuilder.ResourceSyncerV2 {
-	syncers := []connectorbuilder.ResourceSyncerV2{
+	return []connectorbuilder.ResourceSyncerV2{
 		newUserBuilder(ctx, d.client, d.SyncAccountGroups),
 		newGroupBuilder(ctx, d.client),
 		newRoleBuilder(ctx, d.client),
 		newLicenseBuilder(ctx, d.client),
 		newAccountGroupBuilder(ctx, d.client),
 	}
-	return syncers
 }
 
 // Asset takes an input AssetRef and attempts to fetch it using the connector's authenticated http client
