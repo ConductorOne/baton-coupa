@@ -16,20 +16,12 @@ import (
 )
 
 type userBuilder struct {
-	client            *client.Client
-	syncAccountGroups bool
+	client       *client.Client
+	resourceType *v2.ResourceType
 }
 
 func (o *userBuilder) ResourceType(_ context.Context) *v2.ResourceType {
-	rt := userResourceType
-	annos := annotations.Annotations(rt.GetAnnotations())
-	if o.syncAccountGroups {
-		annos.Append(&v2.SkipEntitlements{})
-	} else {
-		annos.Append(&v2.SkipEntitlementsAndGrants{})
-	}
-	rt.Annotations = annos
-	return rt
+	return o.resourceType
 }
 
 // Create a new connector resource for a Coupa user.
@@ -288,8 +280,20 @@ func (o *userBuilder) CreateAccountCapabilityDetails(
 }
 
 func newUserBuilder(_ context.Context, client *client.Client, syncAccountGroups bool) *userBuilder {
+	annos := annotations.Annotations(userResourceType.GetAnnotations())
+	if syncAccountGroups {
+		annos.Append(&v2.SkipEntitlements{})
+	} else {
+		annos.Append(&v2.SkipEntitlementsAndGrants{})
+	}
+	rt := &v2.ResourceType{
+		Id:          userResourceType.Id,
+		DisplayName: userResourceType.DisplayName,
+		Traits:      userResourceType.Traits,
+		Annotations: annos,
+	}
 	return &userBuilder{
-		client:            client,
-		syncAccountGroups: syncAccountGroups,
+		client:       client,
+		resourceType: rt,
 	}
 }

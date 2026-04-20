@@ -206,12 +206,6 @@
           },
           {
             "@type": "type.googleapis.com/c1.connector.v2.SkipEntitlements"
-          },
-          {
-            "@type": "type.googleapis.com/c1.connector.v2.SkipEntitlements"
-          },
-          {
-            "@type": "type.googleapis.com/c1.connector.v2.SkipEntitlements"
           }
         ]
       },
