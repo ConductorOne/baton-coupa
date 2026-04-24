@@ -8,6 +8,13 @@ import (
 	"golang.org/x/oauth2/clientcredentials"
 )
 
+const (
+	// ScopeAccountingRead is required for account group queries.
+	// Only requested when sync-account-groups is enabled, since existing
+	// OAuth clients may not have this scope configured.
+	ScopeAccountingRead = "core.accounting.read"
+)
+
 var (
 	ScopesReadOnly = []string{
 		"core.business_entity.read",

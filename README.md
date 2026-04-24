@@ -43,6 +43,10 @@ baton resources
 `baton-coupa` will pull down information about the following resources:
 
 - Users
+- Groups
+- Roles
+- Licenses
+- Account Groups (opt-in; requires the `core.accounting.read` OAuth scope and must be selected in ConductorOne when configuring the connector)
 
 # Actions
 

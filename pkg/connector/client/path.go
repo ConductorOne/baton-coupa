@@ -15,6 +15,9 @@ const (
 		`"riskAssessUser","sourcingUser","spendGuardUser","supplyChainUser",` +
 		`"travelUser","treasuryUser"]`
 
+	// setAccountGroupPath sets account groups for a user by id.
+	setAccountGroupPath = `/api/users/%d?fields=["id",{"account_groups":["id","name"]}]`
+
 	// updateUserPath set user id in the path.
 	updateUserPath = `/api/users/%d`
 

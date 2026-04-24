@@ -8,7 +8,6 @@ import (
 	"github.com/conductorone/baton-coupa/pkg/connector/client"
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
 	"github.com/conductorone/baton-sdk/pkg/annotations"
-	"github.com/conductorone/baton-sdk/pkg/pagination"
 	"github.com/conductorone/baton-sdk/pkg/types/entitlement"
 	"github.com/conductorone/baton-sdk/pkg/types/grant"
 	resourceSdk "github.com/conductorone/baton-sdk/pkg/types/resource"
@@ -40,11 +39,10 @@ func licenseResource(license *client.License, parentResourceID *v2.ResourceId) (
 func (o *licenseBuilder) List(
 	_ context.Context,
 	parentResourceID *v2.ResourceId,
-	_ *pagination.Token,
+	_ resourceSdk.SyncOpAttrs,
 ) (
 	[]*v2.Resource,
-	string,
-	annotations.Annotations,
+	*resourceSdk.SyncOpResults,
 	error,
 ) {
 	coupaLicenses := []*client.License{
@@ -120,22 +118,21 @@ func (o *licenseBuilder) List(
 	for _, license := range coupaLicenses {
 		resource, err := licenseResource(license, parentResourceID)
 		if err != nil {
-			return nil, "", nil, err
+			return nil, nil, err
 		}
 		outputResources = append(outputResources, resource)
 	}
 
-	return outputResources, "", nil, nil
+	return outputResources, nil, nil
 }
 
 func (o *licenseBuilder) Entitlements(
 	_ context.Context,
 	resource *v2.Resource,
-	_ *pagination.Token,
+	_ resourceSdk.SyncOpAttrs,
 ) (
 	[]*v2.Entitlement,
-	string,
-	annotations.Annotations,
+	*resourceSdk.SyncOpResults,
 	error,
 ) {
 	return []*v2.Entitlement{
@@ -150,17 +147,16 @@ func (o *licenseBuilder) Entitlements(
 				fmt.Sprintf("%s license in Coupa", resource.DisplayName),
 			),
 		),
-	}, "", nil, nil
+	}, nil, nil
 }
 
 func (o *licenseBuilder) Grants(
 	ctx context.Context,
 	resource *v2.Resource,
-	pToken *pagination.Token,
+	opts resourceSdk.SyncOpAttrs,
 ) (
 	[]*v2.Grant,
-	string,
-	annotations.Annotations,
+	*resourceSdk.SyncOpResults,
 	error,
 ) {
 	logger := ctxzap.Extract(ctx)
@@ -170,7 +166,7 @@ func (o *licenseBuilder) Grants(
 	logger.Debug(
 		"Starting Licenses Grants",
 		zap.String("license_id", licenseId),
-		zap.String("token", pToken.Token),
+		zap.String("token", opts.PageToken.Token),
 	)
 
 	outputGrants := make([]*v2.Grant, 0)
@@ -179,12 +175,12 @@ func (o *licenseBuilder) Grants(
 	var target client.LicenseGrantsQueryResponse
 	response, ratelimitData, err := o.client.Query(
 		ctx,
-		client.LicenseGrantQuery(licenseId, pToken.Token),
+		client.LicenseGrantQuery(licenseId, opts.PageToken.Token),
 		&target,
 	)
 	outputAnnotations.WithRateLimiting(ratelimitData)
 	if err != nil {
-		return nil, "", outputAnnotations, err
+		return nil, &resourceSdk.SyncOpResults{Annotations: outputAnnotations}, err
 	}
 	defer response.Body.Close()
 
@@ -205,7 +201,7 @@ func (o *licenseBuilder) Grants(
 		lastId = userId
 	}
 
-	return outputGrants, lastId, outputAnnotations, nil
+	return outputGrants, &resourceSdk.SyncOpResults{NextPageToken: lastId, Annotations: outputAnnotations}, nil
 }
 
 func (o *licenseBuilder) Grant(ctx context.Context, resource *v2.Resource, entitlement *v2.Entitlement) ([]*v2.Grant, annotations.Annotations, error) {

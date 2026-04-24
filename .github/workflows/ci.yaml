@@ -8,18 +8,11 @@ on:
 jobs:
   test-provisioning:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: true
-      matrix:
-        test-case: [roles, groups, licenses, actions]
     env:
       BATON_LOG_LEVEL: debug
-      CONNECTOR_PRINCIPAL: "${{ secrets.CONNECTOR_PRINCIPAL }}"
       BATON_COUPA_CLIENT_ID: "${{ secrets.BATON_COUPA_CLIENT_ID }}"
       BATON_COUPA_CLIENT_SECRET: "${{ secrets.BATON_COUPA_CLIENT_SECRET }}"
       BATON_COUPA_DOMAIN: "${{ secrets.BATON_COUPA_DOMAIN }}"
-      BATON_STATUS_TEST_USER_ID: "${{ secrets.BATON_STATUS_TEST_USER_ID }}"
-      BATON_CONNECTOR: ./baton-coupa
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -27,27 +20,54 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-      - name: Install baton
-        run: ./scripts/get-baton.sh && mv baton /usr/local/bin
       - name: Build baton-coupa
         run: go build ./cmd/baton-coupa
-      - name: Run tests for ${{ matrix.test-case }}
-        if: matrix.test-case != 'actions'
-        run: |
-          case "${{ matrix.test-case }}" in
-            "roles")
-              ./scripts/validate-grant.sh ${{ env.CONNECTOR_PRINCIPAL }} user role:4:member role:4:member:user:${{ env.CONNECTOR_PRINCIPAL }}
-              ;;
-            "groups")
-              ./scripts/validate-grant.sh ${{ env.CONNECTOR_PRINCIPAL }} user group:2:member group:2:member:user:${{ env.CONNECTOR_PRINCIPAL }}
-              ;;
-            "licenses")
-              ./scripts/validate-grant.sh ${{ env.CONNECTOR_PRINCIPAL }} user license:treasury_user:assigned license:treasury_user:assigned:user:${{ env.CONNECTOR_PRINCIPAL }}
-              ;;
-          esac
+      - name: Test roles provisioning
+        uses: ConductorOne/github-workflows/actions/sync-test@v4
+        with:
+          connector: ./baton-coupa
+          baton-entitlement: 'role:4:member'
+          baton-principal: '${{ secrets.CONNECTOR_PRINCIPAL }}'
+          baton-principal-type: 'user'
+      - name: Test groups provisioning
+        uses: ConductorOne/github-workflows/actions/sync-test@v4
+        with:
+          connector: ./baton-coupa
+          baton-entitlement: 'group:2:member'
+          baton-principal: '${{ secrets.CONNECTOR_PRINCIPAL }}'
+          baton-principal-type: 'user'
+      - name: Test licenses provisioning
+        uses: ConductorOne/github-workflows/actions/sync-test@v4
+        with:
+          connector: ./baton-coupa
+          baton-entitlement: 'license:treasury_user:assigned'
+          baton-principal: '${{ secrets.CONNECTOR_PRINCIPAL }}'
+          baton-principal-type: 'user'
+      - name: Test account groups provisioning
+        uses: ConductorOne/github-workflows/actions/sync-test@v4
+        with:
+          connector: ./baton-coupa
+          baton-entitlement: 'account_group:${{ secrets.BATON_ACCOUNT_GROUP_TEST_ID }}:member'
+          baton-principal: '${{ secrets.CONNECTOR_PRINCIPAL }}'
+          baton-principal-type: 'user'
+  test-actions:
+    runs-on: ubuntu-latest
+    env:
+      BATON_LOG_LEVEL: debug
+      BATON_COUPA_CLIENT_ID: "${{ secrets.BATON_COUPA_CLIENT_ID }}"
+      BATON_COUPA_CLIENT_SECRET: "${{ secrets.BATON_COUPA_CLIENT_SECRET }}"
+      BATON_COUPA_DOMAIN: "${{ secrets.BATON_COUPA_DOMAIN }}"
+      BATON_STATUS_TEST_USER_ID: "${{ secrets.BATON_STATUS_TEST_USER_ID }}"
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Build baton-coupa
+        run: go build ./cmd/baton-coupa
       - name: Test Account Status Changes
-        if: matrix.test-case == 'actions'
-        # TODO: Replace with the official action when it's published
         uses: ConductorOne/github-workflows/actions/account-status-lifecycle-test@v3
         with:
           connector: './baton-coupa'

@@ -3,28 +3,136 @@
   "resourceTypeCapabilities": [
     {
       "resourceType": {
-        "id": "group",
-        "displayName": "group",
-        "traits": [
-          "TRAIT_GROUP"
+        "id": "account_group",
+        "displayName": "Account Group",
+        "annotations": [
+          {
+            "@type": "type.googleapis.com/c1.connector.v2.SkipEntitlementsAndGrants"
+          },
+          {
+            "@type": "type.googleapis.com/c1.connector.v2.OptInRequired"
+          },
+          {
+            "@type": "type.googleapis.com/c1.connector.v2.CapabilityPermissions",
+            "permissions": [
+              {
+                "permission": "core.accounting.read"
+              },
+              {
+                "permission": "core.user.read"
+              },
+              {
+                "permission": "core.user.write"
+              }
+            ]
+          }
         ]
       },
       "capabilities": [
         "CAPABILITY_SYNC",
         "CAPABILITY_PROVISION"
       ],
-      "permissions": {}
+      "permissions": {
+        "permissions": [
+          {
+            "permission": "core.accounting.read"
+          },
+          {
+            "permission": "core.user.read"
+          },
+          {
+            "permission": "core.user.write"
+          }
+        ]
+      },
+      "optInRequired": true
     },
     {
       "resourceType": {
-        "id": "license",
-        "displayName": "license"
+        "id": "group",
+        "displayName": "group",
+        "traits": [
+          "TRAIT_GROUP"
+        ],
+        "annotations": [
+          {
+            "@type": "type.googleapis.com/c1.connector.v2.CapabilityPermissions",
+            "permissions": [
+              {
+                "permission": "core.user_group.read"
+              },
+              {
+                "permission": "core.user_group.write"
+              },
+              {
+                "permission": "core.user.read"
+              },
+              {
+                "permission": "core.user.write"
+              }
+            ]
+          }
+        ]
       },
       "capabilities": [
         "CAPABILITY_SYNC",
         "CAPABILITY_PROVISION"
       ],
-      "permissions": {}
+      "permissions": {
+        "permissions": [
+          {
+            "permission": "core.user_group.read"
+          },
+          {
+            "permission": "core.user_group.write"
+          },
+          {
+            "permission": "core.user.read"
+          },
+          {
+            "permission": "core.user.write"
+          }
+        ]
+      }
+    },
+    {
+      "resourceType": {
+        "id": "license",
+        "displayName": "license",
+        "annotations": [
+          {
+            "@type": "type.googleapis.com/c1.connector.v2.CapabilityPermissions",
+            "permissions": [
+              {
+                "permission": "core.business_entity.read"
+              },
+              {
+                "permission": "core.user.read"
+              },
+              {
+                "permission": "core.user.write"
+              }
+            ]
+          }
+        ]
+      },
+      "capabilities": [
+        "CAPABILITY_SYNC",
+        "CAPABILITY_PROVISION"
+      ],
+      "permissions": {
+        "permissions": [
+          {
+            "permission": "core.business_entity.read"
+          },
+          {
+            "permission": "core.user.read"
+          },
+          {
+            "permission": "core.user.write"
+          }
+        ]
+      }
     },
     {
       "resourceType": {
@@ -32,13 +140,41 @@
         "displayName": "role",
         "traits": [
           "TRAIT_ROLE"
+        ],
+        "annotations": [
+          {
+            "@type": "type.googleapis.com/c1.connector.v2.CapabilityPermissions",
+            "permissions": [
+              {
+                "permission": "core.common.read"
+              },
+              {
+                "permission": "core.user.read"
+              },
+              {
+                "permission": "core.user.write"
+              }
+            ]
+          }
         ]
       },
       "capabilities": [
         "CAPABILITY_SYNC",
         "CAPABILITY_PROVISION"
       ],
-      "permissions": {}
+      "permissions": {
+        "permissions": [
+          {
+            "permission": "core.common.read"
+          },
+          {
+            "permission": "core.user.read"
+          },
+          {
+            "permission": "core.user.write"
+          }
+        ]
+      }
     },
     {
       "resourceType": {
@@ -46,13 +182,56 @@
         "displayName": "User",
         "traits": [
           "TRAIT_USER"
+        ],
+        "annotations": [
+          {
+            "@type": "type.googleapis.com/c1.connector.v2.CapabilityPermissions",
+            "permissions": [
+              {
+                "permission": "core.user.read"
+              },
+              {
+                "permission": "core.user.write"
+              },
+              {
+                "permission": "email login"
+              },
+              {
+                "permission": "openid"
+              },
+              {
+                "permission": "profile"
+              }
+            ]
+          },
+          {
+            "@type": "type.googleapis.com/c1.connector.v2.SkipEntitlements"
+          }
         ]
       },
       "capabilities": [
         "CAPABILITY_SYNC",
         "CAPABILITY_ACCOUNT_PROVISIONING"
       ],
-      "permissions": {}
+      "permissions": {
+        "permissions": [
+          {
+            "permission": "core.user.read"
+          },
+          {
+            "permission": "core.user.write"
+          },
+          {
+            "permission": "email login"
+          },
+          {
+            "permission": "openid"
+          },
+          {
+            "permission": "profile"
+          }
+        ]
+      }
     }
   ],
   "connectorCapabilities": [

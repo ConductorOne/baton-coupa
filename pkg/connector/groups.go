@@ -12,7 +12,6 @@ import (
 	"github.com/conductorone/baton-coupa/pkg/connector/client"
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
 	"github.com/conductorone/baton-sdk/pkg/annotations"
-	"github.com/conductorone/baton-sdk/pkg/pagination"
 	"github.com/conductorone/baton-sdk/pkg/types/entitlement"
 	resourceSdk "github.com/conductorone/baton-sdk/pkg/types/resource"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
@@ -48,15 +47,14 @@ func groupResource(group *client.Group, parentResourceID *v2.ResourceId) (*v2.Re
 func (o *groupBuilder) List(
 	ctx context.Context,
 	parentResourceID *v2.ResourceId,
-	pToken *pagination.Token,
+	opts resourceSdk.SyncOpAttrs,
 ) (
 	[]*v2.Resource,
-	string,
-	annotations.Annotations,
+	*resourceSdk.SyncOpResults,
 	error,
 ) {
 	logger := ctxzap.Extract(ctx)
-	logger.Debug("Starting Groups List", zap.String("token", pToken.Token))
+	logger.Debug("Starting Groups List", zap.String("token", opts.PageToken.Token))
 
 	outputResources := make([]*v2.Resource, 0)
 	var outputAnnotations annotations.Annotations
@@ -64,12 +62,12 @@ func (o *groupBuilder) List(
 	var target client.GroupsQueryResponse
 	response, ratelimitData, err := o.client.Query(
 		ctx,
-		client.GroupsQuery(pToken.Token),
+		client.GroupsQuery(opts.PageToken.Token),
 		&target,
 	)
 	outputAnnotations.WithRateLimiting(ratelimitData)
 	if err != nil {
-		return nil, "", outputAnnotations, err
+		return nil, &resourceSdk.SyncOpResults{Annotations: outputAnnotations}, err
 	}
 	defer response.Body.Close()
 
@@ -77,23 +75,22 @@ func (o *groupBuilder) List(
 	for _, group := range target.UserGroups {
 		resource, err := groupResource(group, parentResourceID)
 		if err != nil {
-			return nil, "", nil, err
+			return nil, nil, err
 		}
 		outputResources = append(outputResources, resource)
 		lastId = strconv.Itoa(group.ID)
 	}
 
-	return outputResources, lastId, outputAnnotations, nil
+	return outputResources, &resourceSdk.SyncOpResults{NextPageToken: lastId, Annotations: outputAnnotations}, nil
 }
 
 func (o *groupBuilder) Entitlements(
 	_ context.Context,
 	resource *v2.Resource,
-	_ *pagination.Token,
+	_ resourceSdk.SyncOpAttrs,
 ) (
 	[]*v2.Entitlement,
-	string,
-	annotations.Annotations,
+	*resourceSdk.SyncOpResults,
 	error,
 ) {
 	return []*v2.Entitlement{
@@ -108,17 +105,16 @@ func (o *groupBuilder) Entitlements(
 				fmt.Sprintf("%s group in Coupa", resource.DisplayName),
 			),
 		),
-	}, "", nil, nil
+	}, nil, nil
 }
 
 func (o *groupBuilder) Grants(
 	ctx context.Context,
 	resource *v2.Resource,
-	_ *pagination.Token,
+	_ resourceSdk.SyncOpAttrs,
 ) (
 	[]*v2.Grant,
-	string,
-	annotations.Annotations,
+	*resourceSdk.SyncOpResults,
 	error,
 ) {
 	logger := ctxzap.Extract(ctx)
@@ -141,7 +137,7 @@ func (o *groupBuilder) Grants(
 	)
 	outputAnnotations.WithRateLimiting(ratelimitData)
 	if err != nil {
-		return nil, "", outputAnnotations, err
+		return nil, &resourceSdk.SyncOpResults{Annotations: outputAnnotations}, err
 	}
 	defer response.Body.Close()
 
@@ -163,7 +159,7 @@ func (o *groupBuilder) Grants(
 		}
 	}
 
-	return outputGrants, "", outputAnnotations, nil
+	return outputGrants, &resourceSdk.SyncOpResults{Annotations: outputAnnotations}, nil
 }
 
 func (o *groupBuilder) Grant(ctx context.Context, resource *v2.Resource, entitlement *v2.Entitlement) ([]*v2.Grant, annotations.Annotations, error) {

@@ -13,17 +13,19 @@ import (
 )
 
 type Connector struct {
-	client *client.Client
-	ctx    context.Context
+	client            *client.Client
+	ctx               context.Context
+	SyncAccountGroups bool
 }
 
-// ResourceSyncers returns a ResourceSyncer for each resource type that should be synced from the upstream service.
-func (d *Connector) ResourceSyncers(ctx context.Context) []connectorbuilder.ResourceSyncer {
-	return []connectorbuilder.ResourceSyncer{
-		newUserBuilder(ctx, d.client),
+// ResourceSyncers returns a ResourceSyncerV2 for each resource type that should be synced from the upstream service.
+func (d *Connector) ResourceSyncers(ctx context.Context) []connectorbuilder.ResourceSyncerV2 {
+	return []connectorbuilder.ResourceSyncerV2{
+		newUserBuilder(ctx, d.client, d.SyncAccountGroups),
 		newGroupBuilder(ctx, d.client),
 		newRoleBuilder(ctx, d.client),
 		newLicenseBuilder(ctx, d.client),
+		newAccountGroupBuilder(ctx, d.client),
 	}
 }
 
@@ -62,16 +64,18 @@ func New(
 	instanceUrl string,
 	clientId string,
 	clientSecret string,
+	syncAccountGroups bool,
 ) (*Connector, error) {
 	coupaClient, err := client.New(
 		ctx,
 		instanceUrl,
 		clientId,
 		clientSecret,
+		syncAccountGroups,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Connector{client: coupaClient, ctx: ctx}, nil
+	return &Connector{client: coupaClient, ctx: ctx, SyncAccountGroups: syncAccountGroups}, nil
 }
