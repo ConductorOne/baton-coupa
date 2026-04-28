@@ -19,8 +19,11 @@ sidebarTitle: "Coupa"
 | Groups | <Icon icon="square-check" iconType="solid"  color="#c937ae"/> | <Icon icon="square-check" iconType="solid"  color="#c937ae"/> |
 | Roles | <Icon icon="square-check" iconType="solid"  color="#c937ae"/> | <Icon icon="square-check" iconType="solid"  color="#c937ae"/> |
 | Licenses | <Icon icon="square-check" iconType="solid"  color="#c937ae"/> | <Icon icon="square-check" iconType="solid"  color="#c937ae"/> |
+| Billing Accounts ² | <Icon icon="square-check" iconType="solid"  color="#c937ae"/> | <Icon icon="square-check" iconType="solid"  color="#c937ae"/> |
 
 ¹ Account Groups sync is opt-in. To enable it, select **Account Groups** in the resource types to sync when configuring the connector in C1, and ensure the `core.accounting.read` OAuth scope is added to your Coupa OAuth client.
+
+² Billing Accounts sync requires the `core.accounting.read` OAuth scope. Provisioning (grant/revoke) additionally requires the `core.accounting.write` OAuth scope.
 
 ### Connector actions
 
@@ -77,7 +80,7 @@ A user with **Admin** access in Coupa must perform this task.
     - openid
     - profile
 
-  **If you also want to sync Account Groups, add:**
+  **If you also want to sync Account Groups or Billing Accounts, add:**
     - core.accounting.read
 
   **You'll need these scopes to give C1 READ/WRITE access (syncing access data and provisioning access):**
@@ -94,8 +97,9 @@ A user with **Admin** access in Coupa must perform this task.
     - openid
     - profile
 
-  **If you also want to sync and provision Account Groups, add:**
+  **If you also want to sync and provision Account Groups or Billing Accounts, add:**
     - core.accounting.read
+    - core.accounting.write (required for Billing Account provisioning)
   </Step>
   <Step>
   At the bottom of the page click **Save**.
