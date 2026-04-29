@@ -28,7 +28,7 @@ func main() {
 }
 
 func getConnector(ctx context.Context, cc *cfg.Coupa, connectorOpts *cli.ConnectorOpts) (connectorbuilder.ConnectorBuilderV2, []connectorbuilder.Opt, error) {
-	syncAccountGroups := slices.Contains(connectorOpts.SyncResourceTypeIDs, connector.AccountGroupResourceTypeID) || len(connectorOpts.SyncResourceTypeIDs) == 0
+	syncAccountGroups := slices.Contains(connectorOpts.SyncResourceTypeIDs, connector.AccountGroupResourceTypeID)
 	cb, err := connector.New(
 		ctx,
 		cc.CoupaDomain,
