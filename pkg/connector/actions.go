@@ -18,6 +18,7 @@ import (
 const (
 	ActionEnableUser  = "enable_user"
 	ActionDisableUser = "disable_user"
+	successKey        = "success"
 )
 
 var enableUserAction = &v2.BatonActionSchema{
@@ -35,7 +36,7 @@ var enableUserAction = &v2.BatonActionSchema{
 	},
 	ReturnTypes: []*config.Field{
 		{
-			Name:        "success",
+			Name:        successKey,
 			DisplayName: "Success",
 			Description: "Indicates whether the user was successfully enabled",
 			Field:       &config.Field_BoolField{},
@@ -61,7 +62,7 @@ var disableUserAction = &v2.BatonActionSchema{
 	},
 	ReturnTypes: []*config.Field{
 		{
-			Name:        "success",
+			Name:        successKey,
 			DisplayName: "Success",
 			Description: "Indicates whether the user was successfully disabled",
 			Field:       &config.Field_BoolField{},
@@ -127,7 +128,7 @@ func extractAndValidateUserId(args *structpb.Struct) (string, int, error) {
 func createActionResponse(success bool) *structpb.Struct {
 	return &structpb.Struct{
 		Fields: map[string]*structpb.Value{
-			"success": structpb.NewBoolValue(success),
+			successKey: structpb.NewBoolValue(success),
 		},
 	}
 }

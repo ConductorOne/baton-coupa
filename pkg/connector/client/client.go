@@ -39,6 +39,7 @@ func New(
 	clientId string,
 	clientSecret string,
 	syncAccountGroups bool,
+	baseURLOverride string,
 ) (*Client, error) {
 	httpClient, err := uhttp.NewClient(
 		ctx,
@@ -51,14 +52,22 @@ func New(
 		return nil, err
 	}
 
-	normalizedUrl, err := config.NormalizeCoupaURL(instanceUrl)
-	if err != nil {
-		return nil, err
-	}
-
-	baseUrl, err := url.Parse(normalizedUrl)
-	if err != nil {
-		return nil, err
+	var baseUrl *url.URL
+	switch {
+	case baseURLOverride != "":
+		baseUrl, err = url.Parse(baseURLOverride)
+		if err != nil {
+			return nil, err
+		}
+	default:
+		normalizedUrl, err := config.NormalizeCoupaURL(instanceUrl)
+		if err != nil {
+			return nil, err
+		}
+		baseUrl, err = url.Parse(normalizedUrl)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	coupaClient := &Client{
