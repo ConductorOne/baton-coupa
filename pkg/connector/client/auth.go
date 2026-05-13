@@ -13,6 +13,12 @@ const (
 	// Only requested when sync-account-groups is enabled, since existing
 	// OAuth clients may not have this scope configured.
 	ScopeAccountingRead = "core.accounting.read"
+
+	// ScopeCommonRead covers the business_groups (Content Groups) API endpoint.
+	// This scope is already included in ScopesReadOnly, so no conditional scope
+	// injection is required for content groups (unlike account groups which need
+	// the dedicated core.accounting.read scope).
+	ScopeCommonRead = "core.common.read"
 )
 
 var (

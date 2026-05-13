@@ -47,6 +47,7 @@ baton resources
 - Roles
 - Licenses
 - Account Groups (opt-in; requires the `core.accounting.read` OAuth scope and must be selected in ConductorOne when configuring the connector)
+- Content Groups (opt-in; uses the `core.common.read` OAuth scope — already required by the base connector — and must be selected in ConductorOne when configuring the connector)
 
 # Actions
 

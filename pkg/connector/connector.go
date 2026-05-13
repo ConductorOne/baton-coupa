@@ -16,17 +16,20 @@ type Connector struct {
 	client            *client.Client
 	ctx               context.Context
 	SyncAccountGroups bool
+	SyncContentGroups bool
 }
 
 // ResourceSyncers returns a ResourceSyncerV2 for each resource type that should be synced from the upstream service.
 func (d *Connector) ResourceSyncers(ctx context.Context) []connectorbuilder.ResourceSyncerV2 {
-	return []connectorbuilder.ResourceSyncerV2{
-		newUserBuilder(ctx, d.client, d.SyncAccountGroups),
+	syncers := []connectorbuilder.ResourceSyncerV2{
+		newUserBuilder(ctx, d.client, d.SyncAccountGroups, d.SyncContentGroups),
 		newGroupBuilder(ctx, d.client),
 		newRoleBuilder(ctx, d.client),
 		newLicenseBuilder(ctx, d.client),
 		newAccountGroupBuilder(ctx, d.client),
+		newContentGroupBuilder(ctx, d.client),
 	}
+	return syncers
 }
 
 // Asset takes an input AssetRef and attempts to fetch it using the connector's authenticated http client
@@ -65,6 +68,7 @@ func New(
 	clientId string,
 	clientSecret string,
 	syncAccountGroups bool,
+	syncContentGroups bool,
 	baseURL string,
 ) (*Connector, error) {
 	coupaClient, err := client.New(
@@ -79,5 +83,5 @@ func New(
 		return nil, err
 	}
 
-	return &Connector{client: coupaClient, ctx: ctx, SyncAccountGroups: syncAccountGroups}, nil
+	return &Connector{client: coupaClient, ctx: ctx, SyncAccountGroups: syncAccountGroups, SyncContentGroups: syncContentGroups}, nil
 }

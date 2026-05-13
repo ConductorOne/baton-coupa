@@ -9,6 +9,10 @@ import (
 // Used by callers to check whether account groups are included in SyncResourceTypeIDs.
 const AccountGroupResourceTypeID = "account_group"
 
+// ContentGroupResourceTypeID is the stable ID for the content_group resource type.
+// Used by callers to check whether content groups are included in SyncResourceTypeIDs.
+const ContentGroupResourceTypeID = "content_group"
+
 func capabilityPermissions(perms ...string) *v2.CapabilityPermissions {
 	cp := &v2.CapabilityPermissions{}
 	for _, p := range perms {
@@ -80,6 +84,22 @@ var accountGroupResourceType = &v2.ResourceType{
 		&v2.OptInRequired{},
 		capabilityPermissions(
 			"core.accounting.read",
+			"core.user.read",
+			"core.user.write",
+		),
+	),
+}
+
+var contentGroupResourceType = &v2.ResourceType{
+	Id:          ContentGroupResourceTypeID,
+	DisplayName: "Content Group",
+	Annotations: annotations.New(
+		&v2.SkipEntitlementsAndGrants{},
+		&v2.OptInRequired{},
+		capabilityPermissions(
+			// Content groups use the business_groups API, which is covered by
+			// core.common.read — already present in the base read-only scope set.
+			"core.common.read",
 			"core.user.read",
 			"core.user.write",
 		),

@@ -16,8 +16,9 @@ import (
 )
 
 type userBuilder struct {
-	client       *client.Client
-	resourceType *v2.ResourceType
+	client            *client.Client
+	resourceType      *v2.ResourceType
+	syncContentGroups bool
 }
 
 func (o *userBuilder) ResourceType(_ context.Context) *v2.ResourceType {
@@ -117,9 +118,9 @@ func (o *userBuilder) Entitlements(
 	return nil, nil, nil
 }
 
-// Grants returns account group membership grants for this user.
-// Account group grants are generated from the user side to avoid the expensive
-// pattern of fetching all users once per account group.
+// Grants returns account group and/or content group membership grants for this user.
+// These grants are generated from the user side to avoid the expensive pattern of
+// fetching all users once per group.
 func (o *userBuilder) Grants(
 	ctx context.Context,
 	resource *v2.Resource,
@@ -134,36 +135,67 @@ func (o *userBuilder) Grants(
 		return nil, nil, fmt.Errorf("baton-coupa: invalid user ID %q: %w", resource.Id.Resource, err)
 	}
 
-	var target client.UserAccountGroupsQueryResponse
-	response, ratelimitData, err := o.client.Query(
+	outputGrants := make([]*v2.Grant, 0)
+	var outputAnnotations annotations.Annotations
+
+	// Emit account group grants.
+	var agTarget client.UserAccountGroupsQueryResponse
+	agResponse, agRateLimitData, err := o.client.Query(
 		ctx,
 		client.GetUserAccountGroupsByID(userId),
-		&target,
+		&agTarget,
 	)
-	var outputAnnotations annotations.Annotations
-	outputAnnotations.WithRateLimiting(ratelimitData)
+	outputAnnotations.WithRateLimiting(agRateLimitData)
 	if err != nil {
 		return nil, &resourceSdk.SyncOpResults{Annotations: outputAnnotations}, err
 	}
-	defer response.Body.Close()
+	defer agResponse.Body.Close()
 
-	if len(target.Users) == 0 {
-		return nil, &resourceSdk.SyncOpResults{Annotations: outputAnnotations}, nil
+	if len(agTarget.Users) > 0 {
+		agUser := agTarget.Users[0]
+		for _, ag := range agUser.AccountGroups {
+			outputGrants = append(outputGrants, grant.NewGrant(
+				&v2.Resource{
+					Id: &v2.ResourceId{
+						ResourceType: accountGroupResourceType.Id,
+						Resource:     strconv.Itoa(ag.Id),
+					},
+				},
+				accountGroupEntitlementName,
+				resource.Id,
+			))
+		}
 	}
 
-	user := target.Users[0]
-	outputGrants := make([]*v2.Grant, 0, len(user.AccountGroups))
-	for _, ag := range user.AccountGroups {
-		outputGrants = append(outputGrants, grant.NewGrant(
-			&v2.Resource{
-				Id: &v2.ResourceId{
-					ResourceType: accountGroupResourceType.Id,
-					Resource:     strconv.Itoa(ag.Id),
-				},
-			},
-			accountGroupEntitlementName,
-			resource.Id,
-		))
+	// Emit content group grants when content group sync is enabled.
+	if o.syncContentGroups {
+		var cgTarget client.UserContentGroupsQueryResponse
+		cgResponse, cgRateLimitData, err := o.client.Query(
+			ctx,
+			client.GetUserContentGroupsByID(userId),
+			&cgTarget,
+		)
+		outputAnnotations.WithRateLimiting(cgRateLimitData)
+		if err != nil {
+			return nil, &resourceSdk.SyncOpResults{Annotations: outputAnnotations}, err
+		}
+		defer cgResponse.Body.Close()
+
+		if len(cgTarget.Users) > 0 {
+			cgUser := cgTarget.Users[0]
+			for _, cg := range cgUser.ContentGroups {
+				outputGrants = append(outputGrants, grant.NewGrant(
+					&v2.Resource{
+						Id: &v2.ResourceId{
+							ResourceType: contentGroupResourceType.Id,
+							Resource:     strconv.Itoa(cg.Id),
+						},
+					},
+					contentGroupEntitlementName,
+					resource.Id,
+				))
+			}
+		}
 	}
 
 	return outputGrants, &resourceSdk.SyncOpResults{Annotations: outputAnnotations}, nil
@@ -279,9 +311,9 @@ func (o *userBuilder) CreateAccountCapabilityDetails(
 	}, nil, nil
 }
 
-func newUserBuilder(_ context.Context, client *client.Client, syncAccountGroups bool) *userBuilder {
+func newUserBuilder(_ context.Context, client *client.Client, syncAccountGroups bool, syncContentGroups bool) *userBuilder {
 	annos := annotations.Annotations(userResourceType.GetAnnotations())
-	if syncAccountGroups {
+	if syncAccountGroups || syncContentGroups {
 		annos.Append(&v2.SkipEntitlements{})
 	} else {
 		annos.Append(&v2.SkipEntitlementsAndGrants{})
@@ -293,7 +325,8 @@ func newUserBuilder(_ context.Context, client *client.Client, syncAccountGroups 
 		Annotations: annos,
 	}
 	return &userBuilder{
-		client:       client,
-		resourceType: rt,
+		client:            client,
+		resourceType:      rt,
+		syncContentGroups: syncContentGroups,
 	}
 }

@@ -22,18 +22,20 @@ func main() {
 		version,
 		cfg.Config,
 		getConnector,
-		connectorrunner.WithDefaultCapabilitiesConnectorBuilderV2(&connector.Connector{SyncAccountGroups: true}),
+		connectorrunner.WithDefaultCapabilitiesConnectorBuilderV2(&connector.Connector{SyncAccountGroups: true, SyncContentGroups: true}),
 	)
 }
 
 func getConnector(ctx context.Context, cc *cfg.Coupa, connectorOpts *cli.ConnectorOpts) (connectorbuilder.ConnectorBuilderV2, []connectorbuilder.Opt, error) {
 	syncAccountGroups := connectorOpts.WillSyncResourceType(connector.AccountGroupResourceTypeID)
+	syncContentGroups := connectorOpts.WillSyncResourceType(connector.ContentGroupResourceTypeID)
 	cb, err := connector.New(
 		ctx,
 		cc.CoupaDomain,
 		cc.CoupaClientId,
 		cc.CoupaClientSecret,
 		syncAccountGroups,
+		syncContentGroups,
 		cc.BaseUrl,
 	)
 	if err != nil {
