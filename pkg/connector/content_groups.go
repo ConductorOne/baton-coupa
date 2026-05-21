@@ -204,8 +204,8 @@ func (o *contentGroupBuilder) Revoke(ctx context.Context, g *v2.Grant) (annotati
 	return nil, nil
 }
 
-func (o *contentGroupBuilder) getUserContentGroups(ctx context.Context, userId int) (*client.UserWithContentGroups, error) {
-	var target client.UserContentGroupsQueryResponse
+func (o *contentGroupBuilder) getUserContentGroups(ctx context.Context, userId int) (*client.UserWithGroups, error) {
+	var target client.UserGroupsQueryResponse
 	response, _, err := o.client.Query(
 		ctx,
 		client.GetUserContentGroupsByID(userId),

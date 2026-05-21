@@ -87,6 +87,12 @@ const (
 		id contentGroups { id }
 	}
 }`
+
+	getUserAccountAndContentGroupsByIDQuery = `query getUserAccountAndContentGroups {
+	users(query: "id=%d") {
+		id accountGroups { id } contentGroups { id }
+	}
+}`
 )
 
 func pagination(pg string) string {
@@ -150,4 +156,8 @@ func ContentGroupsQuery(pg string) string {
 
 func GetUserContentGroupsByID(userId int) string {
 	return fmt.Sprintf(getUserContentGroupsByIDQuery, userId)
+}
+
+func GetUserAccountAndContentGroupsByID(userId int) string {
+	return fmt.Sprintf(getUserAccountAndContentGroupsByIDQuery, userId)
 }

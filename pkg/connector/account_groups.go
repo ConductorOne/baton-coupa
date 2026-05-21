@@ -203,8 +203,8 @@ func (o *accountGroupBuilder) Revoke(ctx context.Context, g *v2.Grant) (annotati
 	return nil, nil
 }
 
-func (o *accountGroupBuilder) getUserAccountGroups(ctx context.Context, userId int) (*client.UserWithAccountGroups, error) {
-	var target client.UserAccountGroupsQueryResponse
+func (o *accountGroupBuilder) getUserAccountGroups(ctx context.Context, userId int) (*client.UserWithGroups, error) {
+	var target client.UserGroupsQueryResponse
 	response, _, err := o.client.Query(
 		ctx,
 		client.GetUserAccountGroupsByID(userId),

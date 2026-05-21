@@ -123,15 +123,18 @@ type AccountGroupsQueryResponse struct {
 	AccountGroups []*AccountGroup `json:"accountGroups"`
 }
 
-type UserWithAccountGroups struct {
+type UserWithGroups struct {
 	Id            int `json:"id"`
 	AccountGroups []struct {
 		Id int `json:"id"`
 	} `json:"accountGroups"`
+	ContentGroups []struct {
+		Id int `json:"id"`
+	} `json:"contentGroups"`
 }
 
-type UserAccountGroupsQueryResponse struct {
-	Users []UserWithAccountGroups `json:"users"`
+type UserGroupsQueryResponse struct {
+	Users []UserWithGroups `json:"users"`
 }
 
 // UserAccountGroupsApiResponse is the REST response from PUT /api/users/{id}
@@ -153,16 +156,6 @@ type ContentGroupsQueryResponse struct {
 	ContentGroups []*ContentGroup `json:"businessGroups"`
 }
 
-type UserWithContentGroups struct {
-	Id            int `json:"id"`
-	ContentGroups []struct {
-		Id int `json:"id"`
-	} `json:"contentGroups"`
-}
-
-type UserContentGroupsQueryResponse struct {
-	Users []UserWithContentGroups `json:"users"`
-}
 
 // UserContentGroupsApiResponse is the REST response from PUT /api/users/{id}
 // when updating content groups.

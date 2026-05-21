@@ -139,28 +139,39 @@ func (o *userBuilder) Grants(
 	outputGrants := make([]*v2.Grant, 0)
 	var outputAnnotations annotations.Annotations
 
+	var userGroups client.UserGroupsQueryResponse
+	var query string
+	switch {
+	case o.syncAccountGroups && o.syncContentGroups:
+		query = client.GetUserAccountAndContentGroupsByID(userId)
+	case o.syncAccountGroups:
+		query = client.GetUserAccountGroupsByID(userId)
+	case o.syncContentGroups:
+		query = client.GetUserContentGroupsByID(userId)
+	default:
+		return nil, &resourceSdk.SyncOpResults{Annotations: outputAnnotations}, nil
+	}
+	response, rateLimitData, err := o.client.Query(
+		ctx,
+		query,
+		&userGroups,
+	)
+	outputAnnotations.WithRateLimiting(rateLimitData)
+	if err != nil {
+		return nil, &resourceSdk.SyncOpResults{Annotations: outputAnnotations}, err
+	}
+	defer response.Body.Close()
+
 	// Emit account group grants.
 	if o.syncAccountGroups {
-		var agTarget client.UserAccountGroupsQueryResponse
-		agResponse, agRateLimitData, err := o.client.Query(
-			ctx,
-			client.GetUserAccountGroupsByID(userId),
-			&agTarget,
-		)
-		outputAnnotations.WithRateLimiting(agRateLimitData)
-		if err != nil {
-			return nil, &resourceSdk.SyncOpResults{Annotations: outputAnnotations}, err
-		}
-		defer agResponse.Body.Close()
-
-		if len(agTarget.Users) > 0 {
-			agUser := agTarget.Users[0]
-			for _, ag := range agUser.AccountGroups {
+		if len(userGroups.Users) > 0 {
+			user := userGroups.Users[0]
+			for _, accountGroup := range user.AccountGroups {
 				outputGrants = append(outputGrants, grant.NewGrant(
 					&v2.Resource{
 						Id: &v2.ResourceId{
 							ResourceType: accountGroupResourceType.Id,
-							Resource:     strconv.Itoa(ag.Id),
+							Resource:     strconv.Itoa(accountGroup.Id),
 						},
 					},
 					accountGroupEntitlementName,
@@ -172,26 +183,14 @@ func (o *userBuilder) Grants(
 
 	// Emit content group grants when content group sync is enabled.
 	if o.syncContentGroups {
-		var cgTarget client.UserContentGroupsQueryResponse
-		cgResponse, cgRateLimitData, err := o.client.Query(
-			ctx,
-			client.GetUserContentGroupsByID(userId),
-			&cgTarget,
-		)
-		outputAnnotations.WithRateLimiting(cgRateLimitData)
-		if err != nil {
-			return nil, &resourceSdk.SyncOpResults{Annotations: outputAnnotations}, err
-		}
-		defer cgResponse.Body.Close()
-
-		if len(cgTarget.Users) > 0 {
-			cgUser := cgTarget.Users[0]
-			for _, cg := range cgUser.ContentGroups {
+		if len(userGroups.Users) > 0 {
+			user := userGroups.Users[0]
+			for _, contentGroup := range user.ContentGroups {
 				outputGrants = append(outputGrants, grant.NewGrant(
 					&v2.Resource{
 						Id: &v2.ResourceId{
 							ResourceType: contentGroupResourceType.Id,
-							Resource:     strconv.Itoa(cg.Id),
+							Resource:     strconv.Itoa(contentGroup.Id),
 						},
 					},
 					contentGroupEntitlementName,
