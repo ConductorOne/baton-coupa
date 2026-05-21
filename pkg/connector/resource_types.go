@@ -81,7 +81,6 @@ var accountGroupResourceType = &v2.ResourceType{
 	DisplayName: "Account Group",
 	Annotations: annotations.New(
 		&v2.SkipEntitlementsAndGrants{},
-		&v2.OptInRequired{},
 		capabilityPermissions(
 			"core.accounting.read",
 			"core.user.read",
@@ -95,7 +94,6 @@ var contentGroupResourceType = &v2.ResourceType{
 	DisplayName: "Content Group",
 	Annotations: annotations.New(
 		&v2.SkipEntitlementsAndGrants{},
-		&v2.OptInRequired{},
 		capabilityPermissions(
 			// Content groups use the business_groups API, which is covered by
 			// core.common.read — already present in the base read-only scope set.
