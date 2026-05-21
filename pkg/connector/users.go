@@ -19,6 +19,7 @@ type userBuilder struct {
 	client            *client.Client
 	resourceType      *v2.ResourceType
 	syncContentGroups bool
+	syncAccountGroups bool
 }
 
 func (o *userBuilder) ResourceType(_ context.Context) *v2.ResourceType {
@@ -139,31 +140,33 @@ func (o *userBuilder) Grants(
 	var outputAnnotations annotations.Annotations
 
 	// Emit account group grants.
-	var agTarget client.UserAccountGroupsQueryResponse
-	agResponse, agRateLimitData, err := o.client.Query(
-		ctx,
-		client.GetUserAccountGroupsByID(userId),
-		&agTarget,
-	)
-	outputAnnotations.WithRateLimiting(agRateLimitData)
-	if err != nil {
-		return nil, &resourceSdk.SyncOpResults{Annotations: outputAnnotations}, err
-	}
-	defer agResponse.Body.Close()
+	if o.syncAccountGroups {
+		var agTarget client.UserAccountGroupsQueryResponse
+		agResponse, agRateLimitData, err := o.client.Query(
+			ctx,
+			client.GetUserAccountGroupsByID(userId),
+			&agTarget,
+		)
+		outputAnnotations.WithRateLimiting(agRateLimitData)
+		if err != nil {
+			return nil, &resourceSdk.SyncOpResults{Annotations: outputAnnotations}, err
+		}
+		defer agResponse.Body.Close()
 
-	if len(agTarget.Users) > 0 {
-		agUser := agTarget.Users[0]
-		for _, ag := range agUser.AccountGroups {
-			outputGrants = append(outputGrants, grant.NewGrant(
-				&v2.Resource{
-					Id: &v2.ResourceId{
-						ResourceType: accountGroupResourceType.Id,
-						Resource:     strconv.Itoa(ag.Id),
+		if len(agTarget.Users) > 0 {
+			agUser := agTarget.Users[0]
+			for _, ag := range agUser.AccountGroups {
+				outputGrants = append(outputGrants, grant.NewGrant(
+					&v2.Resource{
+						Id: &v2.ResourceId{
+							ResourceType: accountGroupResourceType.Id,
+							Resource:     strconv.Itoa(ag.Id),
+						},
 					},
-				},
-				accountGroupEntitlementName,
-				resource.Id,
-			))
+					accountGroupEntitlementName,
+					resource.Id,
+				))
+			}
 		}
 	}
 
@@ -328,5 +331,6 @@ func newUserBuilder(_ context.Context, client *client.Client, syncAccountGroups 
 		client:            client,
 		resourceType:      rt,
 		syncContentGroups: syncContentGroups,
+		syncAccountGroups: syncAccountGroups,
 	}
 }
