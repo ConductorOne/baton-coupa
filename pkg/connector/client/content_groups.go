@@ -39,7 +39,7 @@ func (c *Client) SetContentGroups(
 
 	var userResponse UserContentGroupsApiResponse
 
-	_, rateLimit, err := c.doRestRequest(
+	response, rateLimit, err := c.doRestRequest(
 		ctx,
 		http.MethodPut,
 		c.baseUrl.JoinPath(fmt.Sprintf(setContentGroupPath, userId)),
@@ -49,6 +49,7 @@ func (c *Client) SetContentGroups(
 	if err != nil {
 		return nil, rateLimit, err
 	}
+	defer response.Body.Close()
 
 	return &userResponse, rateLimit, nil
 }
