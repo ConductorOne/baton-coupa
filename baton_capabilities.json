@@ -10,9 +10,6 @@
             "@type": "type.googleapis.com/c1.connector.v2.SkipEntitlementsAndGrants"
           },
           {
-            "@type": "type.googleapis.com/c1.connector.v2.OptInRequired"
-          },
-          {
             "@type": "type.googleapis.com/c1.connector.v2.CapabilityPermissions",
             "permissions": [
               {
@@ -44,8 +41,49 @@
             "permission": "core.user.write"
           }
         ]
+      }
+    },
+    {
+      "resourceType": {
+        "id": "content_group",
+        "displayName": "Content Group",
+        "annotations": [
+          {
+            "@type": "type.googleapis.com/c1.connector.v2.SkipEntitlementsAndGrants"
+          },
+          {
+            "@type": "type.googleapis.com/c1.connector.v2.CapabilityPermissions",
+            "permissions": [
+              {
+                "permission": "core.common.read"
+              },
+              {
+                "permission": "core.user.read"
+              },
+              {
+                "permission": "core.user.write"
+              }
+            ]
+          }
+        ]
       },
-      "optInRequired": true
+      "capabilities": [
+        "CAPABILITY_SYNC",
+        "CAPABILITY_PROVISION"
+      ],
+      "permissions": {
+        "permissions": [
+          {
+            "permission": "core.common.read"
+          },
+          {
+            "permission": "core.user.read"
+          },
+          {
+            "permission": "core.user.write"
+          }
+        ]
+      }
     },
     {
       "resourceType": {

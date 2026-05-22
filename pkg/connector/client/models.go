@@ -123,15 +123,18 @@ type AccountGroupsQueryResponse struct {
 	AccountGroups []*AccountGroup `json:"accountGroups"`
 }
 
-type UserWithAccountGroups struct {
+type UserWithGroups struct {
 	Id            int `json:"id"`
 	AccountGroups []struct {
 		Id int `json:"id"`
 	} `json:"accountGroups"`
+	ContentGroups []struct {
+		Id int `json:"id"`
+	} `json:"contentGroups"`
 }
 
-type UserAccountGroupsQueryResponse struct {
-	Users []UserWithAccountGroups `json:"users"`
+type UserGroupsQueryResponse struct {
+	Users []UserWithGroups `json:"users"`
 }
 
 // UserAccountGroupsApiResponse is the REST response from PUT /api/users/{id}
@@ -139,6 +142,26 @@ type UserAccountGroupsQueryResponse struct {
 type UserAccountGroupsApiResponse struct {
 	Id            int            `json:"id"`
 	AccountGroups []AccountGroup `json:"account-groups"`
+}
+
+// ContentGroup represents a Coupa content group (also called business_group in the API).
+// Content groups restrict user access to specific objects in Coupa.
+// https://compass.coupa.com/en-us/products/product-documentation/integration-technical-documentation/the-coupa-core-api/resources/reference-data-resources/content-groups-api-(business_groups)
+type ContentGroup struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+}
+
+type ContentGroupsQueryResponse struct {
+	ContentGroups []*ContentGroup `json:"businessGroups"`
+}
+
+
+// UserContentGroupsApiResponse is the REST response from PUT /api/users/{id}
+// when updating content groups.
+type UserContentGroupsApiResponse struct {
+	Id            int            `json:"id"`
+	ContentGroups []ContentGroup `json:"content-groups"`
 }
 
 type UpdateUserRequest struct {

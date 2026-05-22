@@ -74,6 +74,25 @@ const (
 		id accountGroups { id }
 	}
 }`
+
+	getContentGroupsQuery = `query getContentGroups {
+	businessGroups(query: "%s") {
+		id
+		name
+	}
+}`
+
+	getUserContentGroupsByIDQuery = `query getUserContentGroups {
+	users(query: "id=%d") {
+		id contentGroups { id }
+	}
+}`
+
+	getUserAccountAndContentGroupsByIDQuery = `query getUserAccountAndContentGroups {
+	users(query: "id=%d") {
+		id accountGroups { id } contentGroups { id }
+	}
+}`
 )
 
 func pagination(pg string) string {
@@ -129,4 +148,16 @@ func AccountGroupsQuery(pg string) string {
 
 func GetUserAccountGroupsByID(userId int) string {
 	return fmt.Sprintf(getUserAccountGroupsByIDQuery, userId)
+}
+
+func ContentGroupsQuery(pg string) string {
+	return fmt.Sprintf(getContentGroupsQuery, pagination(pg))
+}
+
+func GetUserContentGroupsByID(userId int) string {
+	return fmt.Sprintf(getUserContentGroupsByIDQuery, userId)
+}
+
+func GetUserAccountAndContentGroupsByID(userId int) string {
+	return fmt.Sprintf(getUserAccountAndContentGroupsByIDQuery, userId)
 }
