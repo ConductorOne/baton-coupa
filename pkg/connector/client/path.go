@@ -13,7 +13,8 @@ const (
 	setLicensePath = `/api/users/%d?fields=["id","analyticsUser","aicUser","ccwUser",` +
 		`"contractsUser","expenseUser","inventoryUser","purchasingUser",` +
 		`"riskAssessUser","sourcingUser","spendGuardUser","supplyChainUser",` +
-		`"travelUser","treasuryUser"]`
+		`"travelUser","treasuryUser","invoicingUser",` +
+		`"categoryPlannerUser","categoryStrategyUser"]`
 
 	// setAccountGroupPath sets account groups for a user by id.
 	setAccountGroupPath = `/api/users/%d?fields=["id",{"account_groups":["id","name"]}]`

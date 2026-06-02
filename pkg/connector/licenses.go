@@ -57,6 +57,16 @@ func (o *licenseBuilder) List(
 			Description: "An Analytics license",
 		},
 		{
+			Name:        "Category Planner",
+			ID:          "category_planner_user",
+			Description: "A Category Planner license",
+		},
+		{
+			Name:        "Category Strategy",
+			ID:          "category_strategy_user",
+			Description: "A Category Strategy license",
+		},
+		{
 			Name:        "Contingent Workforce",
 			ID:          "ccw-user",
 			Description: "A Contingent Workforce license",
@@ -76,6 +86,11 @@ func (o *licenseBuilder) List(
 			Name:        "Inventory",
 			ID:          "inventory-user",
 			Description: "An Inventory license",
+		},
+		{
+			Name:        "Invoicing",
+			ID:          "invoicing_user",
+			Description: "An Invoicing license",
 		},
 		{
 			// This does not revoke
