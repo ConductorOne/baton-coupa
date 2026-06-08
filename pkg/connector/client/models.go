@@ -98,20 +98,23 @@ type UserRolesPutResponse struct {
 }
 
 type UserLicenseResponse struct {
-	Id              int  `json:"id"`
-	RiskAssessUser  bool `json:"risk-assess-user"`
-	AicUser         bool `json:"aic-user"`
-	PurchasingUser  bool `json:"purchasing-user"`
-	ExpenseUser     bool `json:"expense-user"`
-	SourcingUser    bool `json:"sourcing-user"`
-	InventoryUser   bool `json:"inventory-user"`
-	ContractsUser   bool `json:"contracts-user"`
-	AnalyticsUser   bool `json:"analytics-user"`
-	SpendGuardUser  bool `json:"spend-guard-user"`
-	CcwUser         bool `json:"ccw-user"`
-	SupplyChainUser bool `json:"supply-chain-user"`
-	TravelUser      bool `json:"travel-user"`
-	TreasuryUser    bool `json:"treasury-user"`
+	Id                   int  `json:"id"`
+	RiskAssessUser       bool `json:"risk-assess-user"`
+	AicUser              bool `json:"aic-user"`
+	PurchasingUser       bool `json:"purchasing-user"`
+	ExpenseUser          bool `json:"expense-user"`
+	SourcingUser         bool `json:"sourcing-user"`
+	InventoryUser        bool `json:"inventory-user"`
+	ContractsUser        bool `json:"contracts-user"`
+	AnalyticsUser        bool `json:"analytics-user"`
+	SpendGuardUser       bool `json:"spend-guard-user"`
+	CcwUser              bool `json:"ccw-user"`
+	SupplyChainUser      bool `json:"supply-chain-user"`
+	TravelUser           bool `json:"travel-user"`
+	TreasuryUser         bool `json:"treasury-user"`
+	InvoicingUser        bool `json:"invoicing-user"`
+	CategoryPlannerUser  bool `json:"category-planner-user"`
+	CategoryStrategyUser bool `json:"category-strategy-user"`
 }
 
 type AccountGroup struct {
@@ -155,7 +158,6 @@ type ContentGroup struct {
 type ContentGroupsQueryResponse struct {
 	ContentGroups []*ContentGroup `json:"businessGroups"`
 }
-
 
 // UserContentGroupsApiResponse is the REST response from PUT /api/users/{id}
 // when updating content groups.
