@@ -15,6 +15,10 @@ import (
 	"go.uber.org/zap"
 )
 
+func licenseEntitlementID(licenseID string) string {
+	return fmt.Sprintf("%s:%s:%s", licenseResourceType.Id, licenseID, licenseEntitlementName)
+}
+
 const licenseEntitlementName = "assigned"
 
 type licenseBuilder struct {
@@ -33,6 +37,10 @@ func licenseResource(license *client.License, parentResourceID *v2.ResourceId) (
 		license.ID,
 		resourceSdk.WithParentResourceID(parentResourceID),
 		resourceSdk.WithDescription(description),
+		resourceSdk.WithLicenseProfileTrait(
+			resourceSdk.WithLicenseName(license.Name),
+			resourceSdk.WithLicenseEntitlementIDs(licenseEntitlementID(license.ID)),
+		),
 	)
 }
 
