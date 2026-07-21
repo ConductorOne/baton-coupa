@@ -28,9 +28,9 @@ func (o *userBuilder) ResourceType(_ context.Context) *v2.ResourceType {
 
 // Create a new connector resource for a Coupa user.
 func userResource(user *client.User, parentResourceID *v2.ResourceId) (*v2.Resource, error) {
-	status := v2.UserTrait_Status_STATUS_DISABLED
+	status := v2.Status_RESOURCE_STATUS_DISABLED
 	if user.Active {
-		status = v2.UserTrait_Status_STATUS_ENABLED
+		status = v2.Status_RESOURCE_STATUS_ENABLED
 	}
 
 	login := user.Email
@@ -44,17 +44,16 @@ func userResource(user *client.User, parentResourceID *v2.ResourceId) (*v2.Resou
 		user.ID,
 		[]resourceSdk.UserTraitOption{
 			resourceSdk.WithEmail(user.Email, true),
-			resourceSdk.WithStatus(status),
-			resourceSdk.WithUserProfile(
-				map[string]interface{}{
-					"id":        user.ID,
-					"login":     login,
-					"email":     user.Email,
-					"full_name": user.Fullname,
-					"active":    user.Active,
-				}),
 			resourceSdk.WithUserLogin(login),
 		},
+		resourceSdk.WithResourceStatus(status, ""),
+		resourceSdk.WithResourceProfile(map[string]any{
+			"id":        user.ID,
+			"login":     login,
+			"email":     user.Email,
+			"full_name": user.Fullname,
+			"active":    user.Active,
+		}),
 		resourceSdk.WithParentResourceID(parentResourceID),
 		resourceSdk.WithExternalID(&v2.ExternalId{
 			Id: strconv.Itoa(user.ID),

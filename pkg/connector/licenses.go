@@ -27,12 +27,21 @@ func (o *licenseBuilder) ResourceType(ctx context.Context) *v2.ResourceType {
 
 func licenseResource(license *client.License, parentResourceID *v2.ResourceId) (*v2.Resource, error) {
 	description := fmt.Sprintf("%s license in Coupa", license.Name)
+	assignedEntitlementID := entitlement.NewEntitlementID(
+		&v2.Resource{Id: &v2.ResourceId{ResourceType: licenseResourceType.Id, Resource: license.ID}},
+		licenseEntitlementName,
+	)
+
 	return resourceSdk.NewResource(
 		license.Name,
 		licenseResourceType,
 		license.ID,
 		resourceSdk.WithParentResourceID(parentResourceID),
 		resourceSdk.WithDescription(description),
+		resourceSdk.WithLicenseProfileTrait(
+			resourceSdk.WithLicenseName(license.Name),
+			resourceSdk.WithLicenseEntitlementIDs(assignedEntitlementID),
+		),
 	)
 }
 
@@ -67,6 +76,11 @@ func (o *licenseBuilder) List(
 			Description: "A Category Strategy license",
 		},
 		{
+			Name:        "CLM Advanced",
+			ID:          "clm-advanced-user",
+			Description: "A Contract Lifecycle Management Advanced license",
+		},
+		{
 			Name:        "Contingent Workforce",
 			ID:          "ccw-user",
 			Description: "A Contingent Workforce license",
@@ -83,6 +97,11 @@ func (o *licenseBuilder) List(
 			Description: "An Expense license",
 		},
 		{
+			Name:        "Intake",
+			ID:          "intake-user",
+			Description: "An Intake license",
+		},
+		{
 			Name:        "Inventory",
 			ID:          "inventory-user",
 			Description: "An Inventory license",
@@ -91,6 +110,11 @@ func (o *licenseBuilder) List(
 			Name:        "Invoicing",
 			ID:          "invoicing_user",
 			Description: "An Invoicing license",
+		},
+		{
+			Name:        "Navi AI Agent",
+			ID:          "coupa-navi-ai-agent-user",
+			Description: "A Navi AI Agent license",
 		},
 		{
 			// This does not revoke

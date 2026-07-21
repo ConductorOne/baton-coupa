@@ -137,6 +137,9 @@
       "resourceType": {
         "id": "license",
         "displayName": "license",
+        "traits": [
+          "TRAIT_LICENSE_PROFILE"
+        ],
         "annotations": [
           {
             "@type": "type.googleapis.com/c1.connector.v2.CapabilityPermissions",
