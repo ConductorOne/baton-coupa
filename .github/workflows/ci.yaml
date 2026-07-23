@@ -67,13 +67,11 @@ jobs:
           go-version-file: go.mod
       - name: Build baton-coupa
         run: go build ./cmd/baton-coupa
-      - name: Get baton
-        uses: ConductorOne/github-workflows/actions/get-baton@v2
-      - name: Sync to get user list
-        run: ./baton-coupa
-      - name: Test disable user action
-        run: |
-          ./baton-coupa --invoke-action=disable_user --invoke-action-args='{"user_id": "${{ env.BATON_STATUS_TEST_USER_ID }}"}'
-      - name: Test enable user action
-        run: |
-          ./baton-coupa --invoke-action=enable_user --invoke-action-args='{"user_id": "${{ env.BATON_STATUS_TEST_USER_ID }}"}'
+      - name: Test Account Status Changes
+        uses: ConductorOne/github-workflows/actions/account-status-lifecycle-test@v4
+        with:
+          connector: './baton-coupa'
+          account-id: '${{ env.BATON_STATUS_TEST_USER_ID }}'
+          enable-action-name: 'enable_user'
+          disable-action-name: 'disable_user'
+          id-parameter-name: 'user_id'
