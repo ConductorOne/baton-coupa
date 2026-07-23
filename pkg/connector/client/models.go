@@ -115,6 +115,9 @@ type UserLicenseResponse struct {
 	InvoicingUser        bool `json:"invoicing-user"`
 	CategoryPlannerUser  bool `json:"category-planner-user"`
 	CategoryStrategyUser bool `json:"category-strategy-user"`
+	ClmAdvancedUser      bool `json:"clm-advanced-user"`
+	CoupaNaviAiAgentUser bool `json:"coupa-navi-ai-agent-user"`
+	IntakeUser           bool `json:"intake-user"`
 }
 
 type AccountGroup struct {

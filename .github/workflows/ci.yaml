@@ -68,7 +68,7 @@ jobs:
       - name: Build baton-coupa
         run: go build ./cmd/baton-coupa
       - name: Test Account Status Changes
-        uses: ConductorOne/github-workflows/actions/account-status-lifecycle-test@v3
+        uses: ConductorOne/github-workflows/actions/account-status-lifecycle-test@v4
         with:
           connector: './baton-coupa'
           account-id: '${{ env.BATON_STATUS_TEST_USER_ID }}'

@@ -67,6 +67,7 @@ var roleResourceType = &v2.ResourceType{
 var licenseResourceType = &v2.ResourceType{
 	Id:          "license",
 	DisplayName: "license",
+	Traits:      []v2.ResourceType_Trait{v2.ResourceType_TRAIT_LICENSE_PROFILE},
 	Annotations: annotations.New(
 		capabilityPermissions(
 			"core.business_entity.read",

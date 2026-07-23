@@ -14,7 +14,8 @@ const (
 		`"contractsUser","expenseUser","inventoryUser","purchasingUser",` +
 		`"riskAssessUser","sourcingUser","spendGuardUser","supplyChainUser",` +
 		`"travelUser","treasuryUser","invoicingUser",` +
-		`"categoryPlannerUser","categoryStrategyUser"]`
+		`"categoryPlannerUser","categoryStrategyUser",` +
+		`"clmAdvancedUser","coupaNaviAiAgentUser","intakeUser"]`
 
 	// setAccountGroupPath sets account groups for a user by id.
 	setAccountGroupPath = `/api/users/%d?fields=["id",{"account_groups":["id","name"]}]`
