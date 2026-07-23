@@ -257,7 +257,7 @@ func (o *licenseBuilder) Grant(ctx context.Context, resource *v2.Resource, entit
 	}
 
 	newGrant := grant.NewGrant(
-		resource,
+		entitlement.Resource,
 		licenseEntitlementName,
 		&v2.ResourceId{
 			ResourceType: userResourceType.Id,
