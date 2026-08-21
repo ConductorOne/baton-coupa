@@ -43,11 +43,10 @@ func groupResource(group *client.Group, parentResourceID *v2.ResourceId) (*v2.Re
 		group.Name,
 		groupResourceType,
 		group.ID,
-		[]resourceSdk.GroupTraitOption{
-			resourceSdk.WithGroupProfile(profile),
-		},
+		[]resourceSdk.GroupTraitOption{},
 		resourceSdk.WithParentResourceID(parentResourceID),
 		resourceSdk.WithDescription(description),
+		resourceSdk.WithResourceProfile(profile),
 	)
 }
 
