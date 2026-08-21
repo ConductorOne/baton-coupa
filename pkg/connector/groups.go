@@ -34,6 +34,11 @@ func groupResource(group *client.Group, parentResourceID *v2.ResourceId) (*v2.Re
 		description = *group.Description
 	}
 
+	profile := map[string]interface{}{
+		"active":      group.Active,
+		"can_approve": group.CanApprove,
+	}
+
 	return resourceSdk.NewGroupResource(
 		group.Name,
 		groupResourceType,
@@ -41,6 +46,7 @@ func groupResource(group *client.Group, parentResourceID *v2.ResourceId) (*v2.Re
 		[]resourceSdk.GroupTraitOption{},
 		resourceSdk.WithParentResourceID(parentResourceID),
 		resourceSdk.WithDescription(description),
+		resourceSdk.WithResourceProfile(profile),
 	)
 }
 

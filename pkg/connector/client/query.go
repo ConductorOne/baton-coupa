@@ -17,6 +17,8 @@ const (
 		id
 		name
 		description
+		active
+		canApprove
 	}
 }`
 
