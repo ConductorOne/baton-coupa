@@ -15,11 +15,13 @@ sidebarTitle: "Coupa"
 | Resource | Sync | Provision |
 | :--- | :--- | :--- |
 | Accounts | <Icon icon="square-check" iconType="solid"  color="#c937ae"/> | |
-| Account Groups | <Icon icon="square-check" iconType="solid"  color="#c937ae"/> | <Icon icon="square-check" iconType="solid"  color="#c937ae"/> |
+| Account Groups <sup>1</sup> | <Icon icon="square-check" iconType="solid"  color="#c937ae"/> | <Icon icon="square-check" iconType="solid"  color="#c937ae"/> |
 | Content Groups | <Icon icon="square-check" iconType="solid"  color="#c937ae"/> | <Icon icon="square-check" iconType="solid"  color="#c937ae"/> |
 | Groups | <Icon icon="square-check" iconType="solid"  color="#c937ae"/> | <Icon icon="square-check" iconType="solid"  color="#c937ae"/> |
 | Roles | <Icon icon="square-check" iconType="solid"  color="#c937ae"/> | <Icon icon="square-check" iconType="solid"  color="#c937ae"/> |
 | Licenses | <Icon icon="square-check" iconType="solid"  color="#c937ae"/> | <Icon icon="square-check" iconType="solid"  color="#c937ae"/> |
+
+<sup>1</sup> Account Groups sync is opt-in. To enable it, select **Account Groups** in the resource types to sync when configuring the connector in C1, and ensure the `core.accounting.read` OAuth scope is added to your Coupa OAuth client.
 
 The **Licenses** resource surfaces each user's Coupa license assignments — such as Analytics, Purchasing, Sourcing, CLM Advanced, Navi AI Agent, and Intake — as license profiles, so they can be reviewed and provisioned through C1 License Management.
 
@@ -29,8 +31,8 @@ Connector actions are custom capabilities that extend C1 automations with app-sp
 
 | Action name | Additional fields | Description |
 |-------------|-------------------|-------------|
-| enable_user | `user_id` (string, required) | Enables a disabled user account in Coupa, allowing them to access the system |
-| disable_user     | `user_id` (string, required) | Disables an active user account in Coupa, preventing them from accessing the system |
+| enable_user | `user_id` (string, required) — the Coupa user's numeric ID, the `id` field on `/api/users` | Enables a disabled user account in Coupa, allowing them to access the system |
+| disable_user | `user_id` (string, required) — the Coupa user's numeric ID, the `id` field on `/api/users` | Disables an active user account in Coupa, preventing them from accessing the system |
 
 ## Gather Coupa credentials
 
@@ -69,7 +71,6 @@ A user with **Admin** access in Coupa must perform this task.
     - Select scopes:
 
   **You'll need these scopes to give C1 READ access (syncing access data):**
-    - core.accounting.read
     - core.business_entity.read
     - core.common.read
     - core.user_group.read
@@ -79,12 +80,12 @@ A user with **Admin** access in Coupa must perform this task.
     - openid
     - profile
 
-  **You'll need these scopes to give C1 READ/WRITE access (syncing access data and provisioning access):**
+  **If you also want to sync Account Groups, add:**
     - core.accounting.read
+
+  **You'll need these scopes to give C1 READ/WRITE access (syncing access data and provisioning access):**
     - core.business_entity.read
-    - core.business_entity.write
     - core.common.read
-    - core.common.write
     - core.user_group.read
     - core.user_group.write
     - core.user.read
@@ -93,6 +94,9 @@ A user with **Admin** access in Coupa must perform this task.
     - login
     - openid
     - profile
+
+  **If you also want to sync and provision Account Groups, add:**
+    - core.accounting.read
   </Step>
   <Step>
   At the bottom of the page click **Save**.
