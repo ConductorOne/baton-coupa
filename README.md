@@ -3,7 +3,7 @@
 #
 `baton-coupa` [![Go Reference](https://pkg.go.dev/badge/github.com/conductorone/baton-coupa.svg)](https://pkg.go.dev/github.com/conductorone/baton-coupa) ![ci](https://github.com/conductorone/baton-coupa/actions/workflows/ci.yaml/badge.svg) ![verify](https://github.com/conductorone/baton-coupa/actions/workflows/verify.yaml/badge.svg)
 
-`baton-coupa` is a connector for built using the [Baton SDK](https://github.com/conductorone/baton-sdk).
+`baton-coupa` is a connector for Coupa built using the [Baton SDK](https://github.com/conductorone/baton-sdk). It communicates with the Coupa API to sync data about users, user groups, roles, per-module licenses, account groups and content groups, and supports provisioning of group, role, license, account-group and content-group membership as well as Coupa user accounts.
 
 Check out [Baton](https://github.com/conductorone/baton) to learn more the project in general.
 
@@ -23,14 +23,20 @@ baton resources
 ## docker
 
 ```
-docker run --rm -v $(pwd):/out -e BATON_DOMAIN_URL=domain_url -e BATON_API_KEY=apiKey -e BATON_USERNAME=username ghcr.io/conductorone/baton-coupa:latest -f "/out/sync.c1z"
+docker run --rm -v $(pwd):/out -e BATON_COUPA_DOMAIN=acme.coupacloud.com -e BATON_COUPA_CLIENT_ID=clientId -e BATON_COUPA_CLIENT_SECRET=clientSecret ghcr.io/conductorone/baton-coupa:latest -f "/out/sync.c1z"
 docker run --rm -v $(pwd):/out ghcr.io/conductorone/baton:latest -f "/out/sync.c1z" resources
 ```
 
 ## source
 
+The `baton` CLI cannot be installed with `go install` — its module carries `replace`
+directives, which `go install` rejects. Build it from a checkout, or take a prebuilt binary
+from the [baton-sdk releases](https://github.com/ConductorOne/baton-sdk/releases).
+
 ```
-go install github.com/conductorone/baton/cmd/baton@main
+git clone --depth 1 https://github.com/ConductorOne/baton-sdk.git
+cd baton-sdk && go build -o "$(go env GOPATH)/bin/baton" ./cmd/baton && cd -
+
 go install github.com/conductorone/baton-coupa/cmd/baton-coupa@main
 
 baton-coupa
@@ -49,6 +55,11 @@ baton resources
 - Account Groups
 - Content Groups
 
+Account Groups sync is opt-in: enable the resource type when configuring the connector in C1,
+and add the `core.accounting.read` scope to your Coupa OAuth client.
+
+Grant, revoke and account creation require the `--provisioning` flag (`BATON_PROVISIONING`).
+
 # Actions
 
 `baton-coupa` supports the following actions on user accounts:
@@ -59,14 +70,14 @@ Enables a disabled user account in Coupa.
 **Action Name:** `enable_user`
 
 **Arguments:**
-- `user_id` (required, string): The ID of the user to enable
+- `user_id` (required, string): The Coupa user's numeric ID — the `id` field on `/api/users`, passed as a string (for example `"42"`). A login or an email address is rejected.
 
 **Returns:**
 - `success` (boolean): `true` if the user was successfully enabled
 
 **Example:**
 ```bash
-baton-coupa --invoke-action enable_user --invoke-action-args='{"user_id":"USER_ID"}'
+baton-coupa --invoke-action enable_user --invoke-action-args='{"user_id":"42"}'
 ```
 
 ## Disable User
@@ -75,14 +86,14 @@ Disables an active user account in Coupa.
 **Action Name:** `disable_user`
 
 **Arguments:**
-- `user_id` (required, string): The ID of the user to disable
+- `user_id` (required, string): The Coupa user's numeric ID — the `id` field on `/api/users`, passed as a string (for example `"42"`). A login or an email address is rejected.
 
 **Returns:**
 - `success` (boolean): `true` if the user was successfully disabled
 
 **Example:**
 ```bash
-baton-coupa --invoke-action disable_user --invoke-action-args='{"user_id":"USER_ID"}'
+baton-coupa --invoke-action disable_user --invoke-action-args='{"user_id":"42"}'
 ```
 
 # Contributing, Support and Issues
