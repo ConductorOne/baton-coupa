@@ -102,6 +102,55 @@ func TestNewCreateUserRequest(t *testing.T) {
 			},
 		},
 		{
+			// Only the identifier lookups trim, so the fallback still engages.
+			name: "whitespace-only login and email fall back to the account",
+			accountInfo: &v2.AccountInfo{
+				Login:  "fallback-login",
+				Emails: []*v2.AccountInfo_Email{{Address: "primary@example.com", IsPrimary: true}},
+				Profile: profile(t, map[string]any{
+					"login": "   ",
+					"email": "\t",
+				}),
+			},
+			expected: &client.CreateUserRequest{
+				Login:  "fallback-login",
+				Email:  "primary@example.com",
+				Active: true,
+			},
+		},
+		{
+			name: "padded login and email are trimmed",
+			accountInfo: &v2.AccountInfo{
+				Login:  "fallback-login",
+				Emails: []*v2.AccountInfo_Email{{Address: "fallback@example.com", IsPrimary: true}},
+				Profile: profile(t, map[string]any{
+					"login": "  john.doe  ",
+					"email": " john.doe@example.com ",
+				}),
+			},
+			expected: &client.CreateUserRequest{
+				Login:  "john.doe",
+				Email:  "john.doe@example.com",
+				Active: true,
+			},
+		},
+		{
+			// Names keep the pre-schema pass-through, untrimmed.
+			name: "names are passed through untrimmed",
+			accountInfo: &v2.AccountInfo{
+				Login:   "john.doe",
+				Emails:  []*v2.AccountInfo_Email{{Address: "john.doe@example.com", IsPrimary: true}},
+				Profile: profile(t, map[string]any{"firstname": " John ", "lastname": "Doe"}),
+			},
+			expected: &client.CreateUserRequest{
+				Login:     "john.doe",
+				Email:     "john.doe@example.com",
+				Firstname: " John ",
+				Lastname:  "Doe",
+				Active:    true,
+			},
+		},
+		{
 			name: "missing login",
 			accountInfo: &v2.AccountInfo{
 				Emails: []*v2.AccountInfo_Email{{Address: "john.doe@example.com", IsPrimary: true}},

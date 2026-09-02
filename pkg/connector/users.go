@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/conductorone/baton-coupa/pkg/connector/client"
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
@@ -242,8 +243,13 @@ func newCreateUserRequest(accountInfo *v2.AccountInfo) (*client.CreateUserReques
 	profileString := func(key string) string {
 		return profileFields[key].GetStringValue()
 	}
+	// login and email choose between a mapped value and the C1 fallback, so a
+	// whitespace-only mapping has to read as unset rather than as an identifier.
+	profileIdentifier := func(key string) string {
+		return strings.TrimSpace(profileString(key))
+	}
 
-	login := profileString(accountFieldLogin)
+	login := profileIdentifier(accountFieldLogin)
 	if login == "" {
 		login = accountInfo.GetLogin()
 	}
@@ -251,7 +257,7 @@ func newCreateUserRequest(accountInfo *v2.AccountInfo) (*client.CreateUserReques
 		return nil, status.Error(codes.InvalidArgument, "baton-coupa: login is required")
 	}
 
-	email := profileString(accountFieldEmail)
+	email := profileIdentifier(accountFieldEmail)
 	if email == "" {
 		email = primaryEmail(accountInfo)
 	}
