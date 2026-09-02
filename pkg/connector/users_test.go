@@ -3,11 +3,12 @@ package connector
 import (
 	"testing"
 
+	"github.com/conductorone/baton-coupa/pkg/connector/client"
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
-
-	"github.com/conductorone/baton-coupa/pkg/connector/client"
 )
 
 func profile(t *testing.T, fields map[string]any) *structpb.Struct {
@@ -77,11 +78,17 @@ func TestNewCreateUserRequest(t *testing.T) {
 			accountInfo: &v2.AccountInfo{
 				Login:  "fallback-login",
 				Emails: []*v2.AccountInfo_Email{{Address: "first@example.com"}},
+				Profile: profile(t, map[string]any{
+					"firstname": "John",
+					"lastname":  "Doe",
+				}),
 			},
 			expected: &client.CreateUserRequest{
-				Login:  "fallback-login",
-				Email:  "first@example.com",
-				Active: true,
+				Login:     "fallback-login",
+				Email:     "first@example.com",
+				Firstname: "John",
+				Lastname:  "Doe",
+				Active:    true,
 			},
 		},
 		{
@@ -96,6 +103,42 @@ func TestNewCreateUserRequest(t *testing.T) {
 			accountInfo: &v2.AccountInfo{Login: "john.doe"},
 			expectedErr: "email is required",
 		},
+		{
+			name: "unmapped firstname",
+			accountInfo: &v2.AccountInfo{
+				Login:   "john.doe",
+				Emails:  []*v2.AccountInfo_Email{{Address: "john.doe@example.com", IsPrimary: true}},
+				Profile: profile(t, map[string]any{"lastname": "Doe"}),
+			},
+			expectedErr: "firstname is required",
+		},
+		{
+			name: "whitespace-only firstname",
+			accountInfo: &v2.AccountInfo{
+				Login:   "john.doe",
+				Emails:  []*v2.AccountInfo_Email{{Address: "john.doe@example.com", IsPrimary: true}},
+				Profile: profile(t, map[string]any{"firstname": "   ", "lastname": "Doe"}),
+			},
+			expectedErr: "firstname is required",
+		},
+		{
+			name: "unmapped lastname",
+			accountInfo: &v2.AccountInfo{
+				Login:   "john.doe",
+				Emails:  []*v2.AccountInfo_Email{{Address: "john.doe@example.com", IsPrimary: true}},
+				Profile: profile(t, map[string]any{"firstname": "John"}),
+			},
+			expectedErr: "lastname is required",
+		},
+		{
+			name: "whitespace-only lastname",
+			accountInfo: &v2.AccountInfo{
+				Login:   "john.doe",
+				Emails:  []*v2.AccountInfo_Email{{Address: "john.doe@example.com", IsPrimary: true}},
+				Profile: profile(t, map[string]any{"firstname": "John", "lastname": "\t"}),
+			},
+			expectedErr: "lastname is required",
+		},
 	}
 
 	for _, test := range tests {
@@ -104,6 +147,9 @@ func TestNewCreateUserRequest(t *testing.T) {
 			if test.expectedErr != "" {
 				require.ErrorContains(t, err, test.expectedErr)
 				require.Nil(t, got)
+				// Mapping problems are the tenant's configuration, not a connector
+				// bug, so they must not surface as a retryable Internal error.
+				require.Equal(t, codes.InvalidArgument, status.Code(err))
 				return
 			}
 

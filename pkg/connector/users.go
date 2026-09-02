@@ -14,6 +14,8 @@ import (
 	resourceSdk "github.com/conductorone/baton-sdk/pkg/types/resource"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
 	"go.uber.org/zap"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // Account creation schema field keys. These are the keys the connector reads
@@ -234,7 +236,7 @@ func primaryEmail(accountInfo *v2.AccountInfo) string {
 // has not mapped them.
 func newCreateUserRequest(accountInfo *v2.AccountInfo) (*client.CreateUserRequest, error) {
 	if accountInfo == nil {
-		return nil, fmt.Errorf("baton-coupa: account info is required")
+		return nil, status.Error(codes.InvalidArgument, "baton-coupa: account info is required")
 	}
 
 	profileFields := accountInfo.GetProfile().GetFields()
@@ -247,7 +249,7 @@ func newCreateUserRequest(accountInfo *v2.AccountInfo) (*client.CreateUserReques
 		login = accountInfo.GetLogin()
 	}
 	if login == "" {
-		return nil, fmt.Errorf("baton-coupa: login is required")
+		return nil, status.Error(codes.InvalidArgument, "baton-coupa: login is required")
 	}
 
 	email := profileString(accountFieldEmail)
@@ -255,14 +257,24 @@ func newCreateUserRequest(accountInfo *v2.AccountInfo) (*client.CreateUserReques
 		email = primaryEmail(accountInfo)
 	}
 	if email == "" {
-		return nil, fmt.Errorf("baton-coupa: email is required")
+		return nil, status.Error(codes.InvalidArgument, "baton-coupa: email is required")
+	}
+
+	firstname := profileString(accountFieldFirstname)
+	if firstname == "" {
+		return nil, status.Error(codes.InvalidArgument, "baton-coupa: firstname is required")
+	}
+
+	lastname := profileString(accountFieldLastname)
+	if lastname == "" {
+		return nil, status.Error(codes.InvalidArgument, "baton-coupa: lastname is required")
 	}
 
 	return &client.CreateUserRequest{
 		Login:     login,
 		Email:     email,
-		Firstname: profileString(accountFieldFirstname),
-		Lastname:  profileString(accountFieldLastname),
+		Firstname: firstname,
+		Lastname:  lastname,
 		Active:    true,
 	}, nil
 }
