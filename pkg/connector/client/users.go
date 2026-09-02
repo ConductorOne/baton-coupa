@@ -60,10 +60,7 @@ func (c *Client) UpdateUser(
 // https://compass.coupa.com/en-us/products/product-documentation/integration-technical-documentation/the-coupa-core-api/resources/reference-data-resources/users-api-(users)
 func (c *Client) CreateUser(
 	ctx context.Context,
-	login string,
-	email string,
-	firstname string,
-	lastname string,
+	request *CreateUserRequest,
 ) (
 	*CreateUserResponse,
 	*v2.RateLimitDescription,
@@ -75,14 +72,6 @@ func (c *Client) CreateUser(
 	if err != nil {
 		l.Error("Failed to initialize client", zap.Error(err))
 		return nil, nil, err
-	}
-
-	request := CreateUserRequest{
-		Login:     login,
-		Email:     email,
-		Firstname: firstname,
-		Lastname:  lastname,
-		Active:    true,
 	}
 
 	var userResponse CreateUserResponse
