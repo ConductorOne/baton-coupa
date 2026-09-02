@@ -43,6 +43,50 @@ func (d *Connector) Metadata(ctx context.Context) (*v2.ConnectorMetadata, error)
 	return &v2.ConnectorMetadata{
 		DisplayName: "Coupa Connector",
 		Description: "Connector syncing Coupa users, groups, roles, and licenses",
+		AccountCreationSchema: &v2.ConnectorAccountCreationSchema{
+			FieldMap: map[string]*v2.ConnectorAccountCreationSchema_Field{
+				accountFieldFirstname: {
+					DisplayName: "First name",
+					Required:    false,
+					Description: "First name of the person who will own the Coupa user.",
+					Field: &v2.ConnectorAccountCreationSchema_Field_StringField{
+						StringField: &v2.ConnectorAccountCreationSchema_StringField{},
+					},
+					Placeholder: "John",
+					Order:       1,
+				},
+				accountFieldLastname: {
+					DisplayName: "Last name",
+					Required:    false,
+					Description: "Last name of the person who will own the Coupa user.",
+					Field: &v2.ConnectorAccountCreationSchema_Field_StringField{
+						StringField: &v2.ConnectorAccountCreationSchema_StringField{},
+					},
+					Placeholder: "Doe",
+					Order:       2,
+				},
+				accountFieldEmail: {
+					DisplayName: "Email",
+					Required:    false,
+					Description: "Email address of the Coupa user. Defaults to the C1 user's primary email.",
+					Field: &v2.ConnectorAccountCreationSchema_Field_StringField{
+						StringField: &v2.ConnectorAccountCreationSchema_StringField{},
+					},
+					Placeholder: "john.doe@example.com",
+					Order:       3,
+				},
+				accountFieldLogin: {
+					DisplayName: "Login",
+					Required:    false,
+					Description: "Login for the Coupa user. Defaults to the C1 user's username.",
+					Field: &v2.ConnectorAccountCreationSchema_Field_StringField{
+						StringField: &v2.ConnectorAccountCreationSchema_StringField{},
+					},
+					Placeholder: "john.doe",
+					Order:       4,
+				},
+			},
+		},
 	}, nil
 }
 

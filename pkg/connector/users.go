@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/conductorone/baton-coupa/pkg/connector/client"
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
@@ -13,6 +14,18 @@ import (
 	resourceSdk "github.com/conductorone/baton-sdk/pkg/types/resource"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
 	"go.uber.org/zap"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+)
+
+// Account creation schema field keys. These are the keys the connector reads
+// out of AccountInfo.Profile, and must match the FieldMap advertised by
+// Connector.Metadata.
+const (
+	accountFieldFirstname = "firstname"
+	accountFieldLastname  = "lastname"
+	accountFieldEmail     = "email"
+	accountFieldLogin     = "login"
 )
 
 type userBuilder struct {
@@ -202,6 +215,65 @@ func (o *userBuilder) Grants(
 	return outputGrants, &resourceSdk.SyncOpResults{Annotations: outputAnnotations}, nil
 }
 
+// primaryEmail returns the account's primary email, falling back to the first
+// email supplied when none is flagged primary.
+func primaryEmail(accountInfo *v2.AccountInfo) string {
+	emails := accountInfo.GetEmails()
+	for _, e := range emails {
+		if e.GetIsPrimary() {
+			return e.GetAddress()
+		}
+	}
+	if len(emails) > 0 {
+		return emails[0].GetAddress()
+	}
+	return ""
+}
+
+// newCreateUserRequest maps an AccountInfo onto the Coupa user fields. Profile
+// values come from the account creation schema advertised by
+// Connector.Metadata; login and email fall back to the C1 user's own login and
+// primary email when the tenant has not mapped them.
+func newCreateUserRequest(accountInfo *v2.AccountInfo) (*client.CreateUserRequest, error) {
+	if accountInfo == nil {
+		return nil, status.Error(codes.InvalidArgument, "baton-coupa: account info is required")
+	}
+
+	profileFields := accountInfo.GetProfile().GetFields()
+	profileString := func(key string) string {
+		return profileFields[key].GetStringValue()
+	}
+	// login and email choose between a mapped value and the C1 fallback, so a
+	// whitespace-only mapping has to read as unset rather than as an identifier.
+	profileIdentifier := func(key string) string {
+		return strings.TrimSpace(profileString(key))
+	}
+
+	login := profileIdentifier(accountFieldLogin)
+	if login == "" {
+		login = accountInfo.GetLogin()
+	}
+	if login == "" {
+		return nil, status.Error(codes.InvalidArgument, "baton-coupa: login is required")
+	}
+
+	email := profileIdentifier(accountFieldEmail)
+	if email == "" {
+		email = primaryEmail(accountInfo)
+	}
+	if email == "" {
+		return nil, status.Error(codes.InvalidArgument, "baton-coupa: email is required")
+	}
+
+	return &client.CreateUserRequest{
+		Login:     login,
+		Email:     email,
+		Firstname: profileString(accountFieldFirstname),
+		Lastname:  profileString(accountFieldLastname),
+		Active:    true,
+	}, nil
+}
+
 // CreateAccount creates a new user account in Coupa.
 // Implements the AccountManagerLimited interface.
 func (o *userBuilder) CreateAccount(
@@ -216,50 +288,20 @@ func (o *userBuilder) CreateAccount(
 ) {
 	l := ctxzap.Extract(ctx)
 
-	if accountInfo == nil {
-		return nil, nil, nil, fmt.Errorf("baton-coupa: account info is required")
-	}
-
-	login := accountInfo.GetLogin()
-	if login == "" {
-		return nil, nil, nil, fmt.Errorf("baton-coupa: login is required")
-	}
-
-	// Get the primary email from the account info
-	var email string
-	for _, e := range accountInfo.GetEmails() {
-		if e.GetIsPrimary() {
-			email = e.GetAddress()
-			break
-		}
-	}
-	if email == "" && len(accountInfo.GetEmails()) > 0 {
-		email = accountInfo.GetEmails()[0].GetAddress()
-	}
-	if email == "" {
-		return nil, nil, nil, fmt.Errorf("baton-coupa: email is required")
-	}
-
-	// Extract first/last name from the profile if available
-	var firstname, lastname string
-	if profile := accountInfo.GetProfile(); profile != nil {
-		if fn := profile.GetFields()["firstname"]; fn != nil {
-			firstname = fn.GetStringValue()
-		}
-		if ln := profile.GetFields()["lastname"]; ln != nil {
-			lastname = ln.GetStringValue()
-		}
+	createReq, err := newCreateUserRequest(accountInfo)
+	if err != nil {
+		return nil, nil, nil, err
 	}
 
 	l.Debug("creating user account",
-		zap.String("login", login),
-		zap.String("email", email),
-		zap.String("firstname", firstname),
-		zap.String("lastname", lastname),
+		zap.String("login", createReq.Login),
+		zap.String("email", createReq.Email),
+		zap.String("firstname", createReq.Firstname),
+		zap.String("lastname", createReq.Lastname),
 	)
 
 	annos := annotations.New()
-	userResponse, rateLimit, err := o.client.CreateUser(ctx, login, email, firstname, lastname)
+	userResponse, rateLimit, err := o.client.CreateUser(ctx, createReq)
 	annos.WithRateLimiting(rateLimit)
 	if err != nil {
 		l.Error("failed to create user", zap.Error(err))
