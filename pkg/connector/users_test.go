@@ -78,17 +78,27 @@ func TestNewCreateUserRequest(t *testing.T) {
 			accountInfo: &v2.AccountInfo{
 				Login:  "fallback-login",
 				Emails: []*v2.AccountInfo_Email{{Address: "first@example.com"}},
-				Profile: profile(t, map[string]any{
-					"firstname": "John",
-					"lastname":  "Doe",
-				}),
 			},
 			expected: &client.CreateUserRequest{
-				Login:     "fallback-login",
-				Email:     "first@example.com",
-				Firstname: "John",
-				Lastname:  "Doe",
-				Active:    true,
+				Login:  "fallback-login",
+				Email:  "first@example.com",
+				Active: true,
+			},
+		},
+		{
+			// Unmapped names are passed through empty, as before the schema
+			// existed. CreateUserRequest omits them and Coupa decides.
+			name: "unmapped names are not rejected",
+			accountInfo: &v2.AccountInfo{
+				Login:   "john.doe",
+				Emails:  []*v2.AccountInfo_Email{{Address: "john.doe@example.com", IsPrimary: true}},
+				Profile: profile(t, map[string]any{"lastname": "Doe"}),
+			},
+			expected: &client.CreateUserRequest{
+				Login:    "john.doe",
+				Email:    "john.doe@example.com",
+				Lastname: "Doe",
+				Active:   true,
 			},
 		},
 		{
@@ -102,42 +112,6 @@ func TestNewCreateUserRequest(t *testing.T) {
 			name:        "missing email",
 			accountInfo: &v2.AccountInfo{Login: "john.doe"},
 			expectedErr: "email is required",
-		},
-		{
-			name: "unmapped firstname",
-			accountInfo: &v2.AccountInfo{
-				Login:   "john.doe",
-				Emails:  []*v2.AccountInfo_Email{{Address: "john.doe@example.com", IsPrimary: true}},
-				Profile: profile(t, map[string]any{"lastname": "Doe"}),
-			},
-			expectedErr: "firstname is required",
-		},
-		{
-			name: "whitespace-only firstname",
-			accountInfo: &v2.AccountInfo{
-				Login:   "john.doe",
-				Emails:  []*v2.AccountInfo_Email{{Address: "john.doe@example.com", IsPrimary: true}},
-				Profile: profile(t, map[string]any{"firstname": "   ", "lastname": "Doe"}),
-			},
-			expectedErr: "firstname is required",
-		},
-		{
-			name: "unmapped lastname",
-			accountInfo: &v2.AccountInfo{
-				Login:   "john.doe",
-				Emails:  []*v2.AccountInfo_Email{{Address: "john.doe@example.com", IsPrimary: true}},
-				Profile: profile(t, map[string]any{"firstname": "John"}),
-			},
-			expectedErr: "lastname is required",
-		},
-		{
-			name: "whitespace-only lastname",
-			accountInfo: &v2.AccountInfo{
-				Login:   "john.doe",
-				Emails:  []*v2.AccountInfo_Email{{Address: "john.doe@example.com", IsPrimary: true}},
-				Profile: profile(t, map[string]any{"firstname": "John", "lastname": "\t"}),
-			},
-			expectedErr: "lastname is required",
 		},
 	}
 

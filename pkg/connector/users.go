@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strconv"
-	"strings"
 
 	"github.com/conductorone/baton-coupa/pkg/connector/client"
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
@@ -232,8 +231,8 @@ func primaryEmail(accountInfo *v2.AccountInfo) string {
 
 // newCreateUserRequest maps an AccountInfo onto the Coupa user fields. Profile
 // values come from the account creation schema advertised by
-// Connector.Metadata; login and email fall back to the C1 user when the tenant
-// has not mapped them.
+// Connector.Metadata; login and email fall back to the C1 user's own login and
+// primary email when the tenant has not mapped them.
 func newCreateUserRequest(accountInfo *v2.AccountInfo) (*client.CreateUserRequest, error) {
 	if accountInfo == nil {
 		return nil, status.Error(codes.InvalidArgument, "baton-coupa: account info is required")
@@ -241,7 +240,7 @@ func newCreateUserRequest(accountInfo *v2.AccountInfo) (*client.CreateUserReques
 
 	profileFields := accountInfo.GetProfile().GetFields()
 	profileString := func(key string) string {
-		return strings.TrimSpace(profileFields[key].GetStringValue())
+		return profileFields[key].GetStringValue()
 	}
 
 	login := profileString(accountFieldLogin)
@@ -260,21 +259,11 @@ func newCreateUserRequest(accountInfo *v2.AccountInfo) (*client.CreateUserReques
 		return nil, status.Error(codes.InvalidArgument, "baton-coupa: email is required")
 	}
 
-	firstname := profileString(accountFieldFirstname)
-	if firstname == "" {
-		return nil, status.Error(codes.InvalidArgument, "baton-coupa: firstname is required")
-	}
-
-	lastname := profileString(accountFieldLastname)
-	if lastname == "" {
-		return nil, status.Error(codes.InvalidArgument, "baton-coupa: lastname is required")
-	}
-
 	return &client.CreateUserRequest{
 		Login:     login,
 		Email:     email,
-		Firstname: firstname,
-		Lastname:  lastname,
+		Firstname: profileString(accountFieldFirstname),
+		Lastname:  profileString(accountFieldLastname),
 		Active:    true,
 	}, nil
 }
