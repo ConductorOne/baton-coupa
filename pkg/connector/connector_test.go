@@ -33,6 +33,11 @@ func TestMetadataAccountCreationSchema(t *testing.T) {
 		orders[field.GetOrder()] = key
 	}
 
-	require.True(t, fieldMap[accountFieldFirstname].GetRequired())
-	require.True(t, fieldMap[accountFieldLastname].GetRequired())
+	// No field may be Required. C1 hard-fails provisioning when a required
+	// schema field has no expression in the tenant's stored account-provision
+	// config, and no existing config can name these keys — the connector never
+	// advertised a schema for the UI to offer.
+	for key, field := range fieldMap {
+		require.False(t, field.GetRequired(), "field %s is marked required", key)
+	}
 }
