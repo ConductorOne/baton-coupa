@@ -23,7 +23,7 @@ baton resources
 ## docker
 
 ```
-docker run --rm -v $(pwd):/out -e BATON_COUPA_DOMAIN=acme.coupacloud.com -e BATON_COUPA_CLIENT_ID=clientId -e BATON_COUPA_CLIENT_SECRET=clientSecret ghcr.io/conductorone/baton-coupa:latest -f "/out/sync.c1z"
+docker run --rm -v $(pwd):/out -e BATON_COUPA_DOMAIN=acme.coupacloud.com -e BATON_COUPA_CLIENT_ID=clientId -e BATON_COUPA_CLIENT_SECRET=clientSecret public.ecr.aws/conductorone/baton-coupa:latest -f "/out/sync.c1z"
 docker run --rm -v $(pwd):/out ghcr.io/conductorone/baton:latest -f "/out/sync.c1z" resources
 ```
 
