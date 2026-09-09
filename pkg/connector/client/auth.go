@@ -21,7 +21,7 @@ var (
 		"core.common.read",
 		"core.user_group.read",
 		"core.user.read",
-		"email login",
+		"login",
 		"openid",
 		"profile",
 	}

@@ -235,7 +235,7 @@
                 "permission": "core.user.write"
               },
               {
-                "permission": "email login"
+                "permission": "login"
               },
               {
                 "permission": "openid"
@@ -263,7 +263,7 @@
             "permission": "core.user.write"
           },
           {
-            "permission": "email login"
+            "permission": "login"
           },
           {
             "permission": "openid"
