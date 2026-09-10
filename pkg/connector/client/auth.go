@@ -93,6 +93,8 @@ func oauthTokenErrorMessage(retrieveErr *oauth2.RetrieveError) string {
 		return fmt.Sprintf("%s: %s", retrieveErr.ErrorCode, retrieveErr.ErrorDescription)
 	case retrieveErr.ErrorCode != "":
 		return retrieveErr.ErrorCode
+	case retrieveErr.ErrorDescription != "":
+		return retrieveErr.ErrorDescription
 	case retrieveErr.Response != nil:
 		return retrieveErr.Response.Status
 	default:
