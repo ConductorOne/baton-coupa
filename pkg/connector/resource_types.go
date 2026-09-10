@@ -30,7 +30,7 @@ var userResourceType = &v2.ResourceType{
 		capabilityPermissions(
 			"core.user.read",
 			"core.user.write",
-			"email login",
+			"login",
 			"openid",
 			"profile",
 		),
