@@ -137,7 +137,7 @@ func (c *Client) Initialize(ctx context.Context) error {
 
 	rtoken, err := c.ReadOnlyTokenSource.Token()
 	if err != nil {
-		return err
+		return wrapTokenError("failed to obtain read-only token", err)
 	}
 	c.readOnlyToken = rtoken.AccessToken
 
