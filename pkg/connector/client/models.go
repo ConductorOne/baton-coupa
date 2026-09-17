@@ -194,7 +194,7 @@ type CreateUserRequest struct {
 	EmployeeNumber       string             `json:"employee-number,omitempty"`
 	Manager              *UserReference     `json:"manager,omitempty"`
 	PurchasingUser       *bool              `json:"purchasing-user,omitempty"`
-	InvoicingUser        *bool              `json:"invoicing_user,omitempty"`
+	InvoicingUser        *bool              `json:"invoicing-user,omitempty"`
 	SourcingUser         *bool              `json:"sourcing-user,omitempty"`
 	AccountSecurityType  *int               `json:"account-security-type,omitempty"`
 	AuthenticationMethod string             `json:"authentication-method,omitempty"`

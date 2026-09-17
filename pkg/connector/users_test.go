@@ -35,7 +35,7 @@ func TestNewCreateUserRequest(t *testing.T) {
 				Emails: []*v2.AccountInfo_Email{{Address: "john@example.com", IsPrimary: true}},
 				Profile: profile(t, map[string]any{
 					"sso-identifier": "john-sso", "employee-number": "E123", "manager.login": "jane.manager",
-					"purchasing-user": true, "invoicing_user": false, "sourcing-user": true,
+					"purchasing-user": true, "invoicing-user": false, "sourcing-user": true,
 					"account-security-type": 2, "authentication-method": "saml", "default-locale": "en-GB",
 					"default-account-type": "Corporate", "default-currency": "GBP",
 					"custom-fields": map[string]any{"custom-department-code": "ENG", "custom-enabled": true},
@@ -48,6 +48,25 @@ func TestNewCreateUserRequest(t *testing.T) {
 				AccountSecurityType: intPointer(2), AuthenticationMethod: "saml", DefaultLocale: "en-GB",
 				DefaultAccountType: &client.NamedReference{Name: "Corporate"}, DefaultCurrency: &client.CurrencyReference{Code: "GBP"},
 				CustomFields: map[string]any{"custom-department-code": "ENG", "custom-enabled": true},
+			},
+		},
+		{
+			name: "null and wrong-kind optional fields are omitted",
+			accountInfo: &v2.AccountInfo{
+				Login:  "john.doe",
+				Emails: []*v2.AccountInfo_Email{{Address: "john@example.com", IsPrimary: true}},
+				Profile: profile(t, map[string]any{
+					"purchasing-user":       nil,
+					"invoicing-user":        "false",
+					"sourcing-user":         1,
+					"account-security-type": "2",
+					"manager.login":         "   ",
+					"default-account-type":  "\t",
+					"default-currency":      "  ",
+				}),
+			},
+			expected: &client.CreateUserRequest{
+				Login: "john.doe", Email: "john@example.com", Active: true,
 			},
 		},
 		{
@@ -220,7 +239,7 @@ func TestCreateUserRequestMarshalJSON(t *testing.T) {
 	require.NoError(t, json.Unmarshal(data, &payload))
 	require.Equal(t, "john", payload["login"])
 	require.Equal(t, true, payload["active"])
-	require.Equal(t, false, payload["invoicing_user"])
+	require.Equal(t, false, payload["invoicing-user"])
 	require.Equal(t, map[string]any{"custom-one": "value"}, payload["custom-fields"])
 	require.Equal(t, map[string]any{"login": "manager"}, payload["manager"])
 	require.NotContains(t, payload, "default-currency")

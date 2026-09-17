@@ -51,10 +51,25 @@ func (d *Connector) Metadata(ctx context.Context) (*v2.ConnectorMetadata, error)
 
 func accountCreationFields() map[string]*v2.ConnectorAccountCreationSchema_Field {
 	stringField := func(name, description, placeholder string, order int32) *v2.ConnectorAccountCreationSchema_Field {
-		return &v2.ConnectorAccountCreationSchema_Field{DisplayName: name, Description: description, Placeholder: placeholder, Order: order, Field: &v2.ConnectorAccountCreationSchema_Field_StringField{StringField: &v2.ConnectorAccountCreationSchema_StringField{}}}
+		return &v2.ConnectorAccountCreationSchema_Field{
+			DisplayName: name,
+			Description: description,
+			Placeholder: placeholder,
+			Order:       order,
+			Field: &v2.ConnectorAccountCreationSchema_Field_StringField{
+				StringField: &v2.ConnectorAccountCreationSchema_StringField{},
+			},
+		}
 	}
 	boolField := func(name, description string, order int32) *v2.ConnectorAccountCreationSchema_Field {
-		return &v2.ConnectorAccountCreationSchema_Field{DisplayName: name, Description: description, Order: order, Field: &v2.ConnectorAccountCreationSchema_Field_BoolField{BoolField: &v2.ConnectorAccountCreationSchema_BoolField{}}}
+		return &v2.ConnectorAccountCreationSchema_Field{
+			DisplayName: name,
+			Description: description,
+			Order:       order,
+			Field: &v2.ConnectorAccountCreationSchema_Field_BoolField{
+				BoolField: &v2.ConnectorAccountCreationSchema_BoolField{},
+			},
+		}
 	}
 	fields := map[string]*v2.ConnectorAccountCreationSchema_Field{
 		accountFieldFirstname: {
@@ -97,18 +112,32 @@ func accountCreationFields() map[string]*v2.ConnectorAccountCreationSchema_Field
 			Placeholder: "john.doe",
 			Order:       4,
 		},
-		accountFieldSSOIdentifier:        stringField("SSO identifier", "Single sign-on identifier for the Coupa user.", "john.doe", 5),
-		accountFieldEmployeeNumber:       stringField("Employee number", "Employee number for the Coupa user.", "12345", 6),
-		accountFieldManagerLogin:         stringField("Manager login", "Login of the user's manager in Coupa.", "manager.login", 7),
-		accountFieldPurchasingUser:       boolField("Purchasing user", "Assign a Coupa Purchasing license during account creation.", 8),
-		accountFieldInvoicingUser:        boolField("Invoicing user", "Assign a Coupa Invoicing license during account creation.", 9),
-		accountFieldSourcingUser:         boolField("Sourcing user", "Assign a Coupa Sourcing license during account creation.", 10),
-		accountFieldAccountSecurityType:  {DisplayName: "Account security type", Description: "Coupa account security type identifier.", Order: 11, Field: &v2.ConnectorAccountCreationSchema_Field_IntField{IntField: &v2.ConnectorAccountCreationSchema_IntField{}}},
+		accountFieldSSOIdentifier:  stringField("SSO identifier", "Single sign-on identifier for the Coupa user.", "john.doe", 5),
+		accountFieldEmployeeNumber: stringField("Employee number", "Employee number for the Coupa user.", "12345", 6),
+		accountFieldManagerLogin:   stringField("Manager login", "Login of the user's manager in Coupa.", "manager.login", 7),
+		accountFieldPurchasingUser: boolField("Purchasing user", "Assign a Coupa Purchasing license during account creation.", 8),
+		accountFieldInvoicingUser:  boolField("Invoicing user", "Assign a Coupa Invoicing license during account creation.", 9),
+		accountFieldSourcingUser:   boolField("Sourcing user", "Assign a Coupa Sourcing license during account creation.", 10),
+		accountFieldAccountSecurityType: {
+			DisplayName: "Account security type",
+			Description: "Coupa account security type identifier.",
+			Order:       11,
+			Field: &v2.ConnectorAccountCreationSchema_Field_IntField{
+				IntField: &v2.ConnectorAccountCreationSchema_IntField{},
+			},
+		},
 		accountFieldAuthenticationMethod: stringField("Authentication method", "Coupa authentication method: coupa_credentials, ldap, or saml (case-sensitive).", "saml", 12),
 		accountFieldDefaultLocale:        stringField("Default locale", "Default locale for the Coupa user.", "en", 13),
 		accountFieldDefaultAccountType:   stringField("Default account type", "Name of the user's default Coupa account type.", "Chart of Accounts", 14),
 		accountFieldDefaultCurrency:      stringField("Default currency", "ISO code of the user's default currency.", "USD", 15),
-		accountFieldCustomFields:         {DisplayName: "Custom fields", Description: "Coupa instance-specific user fields sent in the custom-fields namespace.", Order: 16, Field: &v2.ConnectorAccountCreationSchema_Field_MapField{MapField: &v2.ConnectorAccountCreationSchema_MapField{}}},
+		accountFieldCustomFields: {
+			DisplayName: "Custom fields",
+			Description: "Coupa instance-specific user fields sent in the custom-fields namespace.",
+			Order:       16,
+			Field: &v2.ConnectorAccountCreationSchema_Field_MapField{
+				MapField: &v2.ConnectorAccountCreationSchema_MapField{},
+			},
+		},
 	}
 	return fields
 }

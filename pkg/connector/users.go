@@ -16,6 +16,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 // Account creation schema field keys. These are the keys the connector reads
@@ -30,7 +31,7 @@ const (
 	accountFieldEmployeeNumber       = "employee-number"
 	accountFieldManagerLogin         = "manager.login"
 	accountFieldPurchasingUser       = "purchasing-user"
-	accountFieldInvoicingUser        = "invoicing_user"
+	accountFieldInvoicingUser        = "invoicing-user"
 	accountFieldSourcingUser         = "sourcing-user"
 	accountFieldAccountSecurityType  = "account-security-type"
 	accountFieldAuthenticationMethod = "authentication-method"
@@ -257,18 +258,26 @@ func newCreateUserRequest(accountInfo *v2.AccountInfo) (*client.CreateUserReques
 	}
 	profileBool := func(key string) *bool {
 		value, ok := profileFields[key]
-		if !ok || value.GetKind() == nil {
+		if !ok {
 			return nil
 		}
-		v := value.GetBoolValue()
+		kind, ok := value.GetKind().(*structpb.Value_BoolValue)
+		if !ok {
+			return nil
+		}
+		v := kind.BoolValue
 		return &v
 	}
 	profileInt := func(key string) *int {
 		value, ok := profileFields[key]
-		if !ok || value.GetKind() == nil {
+		if !ok {
 			return nil
 		}
-		v := int(value.GetNumberValue())
+		kind, ok := value.GetKind().(*structpb.Value_NumberValue)
+		if !ok {
+			return nil
+		}
+		v := int(kind.NumberValue)
 		return &v
 	}
 	profileMap := func(key string) map[string]any {
@@ -326,15 +335,15 @@ func newCreateUserRequest(accountInfo *v2.AccountInfo) (*client.CreateUserReques
 		Active:               true,
 		SSOIdentifier:        profileString(accountFieldSSOIdentifier),
 		EmployeeNumber:       profileString(accountFieldEmployeeNumber),
-		Manager:              userReference(profileString(accountFieldManagerLogin)),
+		Manager:              userReference(profileIdentifier(accountFieldManagerLogin)),
 		PurchasingUser:       profileBool(accountFieldPurchasingUser),
 		InvoicingUser:        profileBool(accountFieldInvoicingUser),
 		SourcingUser:         profileBool(accountFieldSourcingUser),
 		AccountSecurityType:  profileInt(accountFieldAccountSecurityType),
 		AuthenticationMethod: profileString(accountFieldAuthenticationMethod),
 		DefaultLocale:        profileString(accountFieldDefaultLocale),
-		DefaultAccountType:   namedReference(profileString(accountFieldDefaultAccountType)),
-		DefaultCurrency:      currencyReference(profileString(accountFieldDefaultCurrency)),
+		DefaultAccountType:   namedReference(profileIdentifier(accountFieldDefaultAccountType)),
+		DefaultCurrency:      currencyReference(profileIdentifier(accountFieldDefaultCurrency)),
 		CustomFields:         profileMap(accountFieldCustomFields),
 	}, nil
 }
