@@ -22,10 +22,22 @@ import (
 // out of AccountInfo.Profile, and must match the FieldMap advertised by
 // Connector.Metadata.
 const (
-	accountFieldFirstname = "firstname"
-	accountFieldLastname  = "lastname"
-	accountFieldEmail     = "email"
-	accountFieldLogin     = "login"
+	accountFieldFirstname            = "firstname"
+	accountFieldLastname             = "lastname"
+	accountFieldEmail                = "email"
+	accountFieldLogin                = "login"
+	accountFieldSSOIdentifier        = "sso-identifier"
+	accountFieldEmployeeNumber       = "employee-number"
+	accountFieldManagerLogin         = "manager.login"
+	accountFieldPurchasingUser       = "purchasing-user"
+	accountFieldInvoicingUser        = "invoicing_user"
+	accountFieldSourcingUser         = "sourcing-user"
+	accountFieldAccountSecurityType  = "account-security-type"
+	accountFieldAuthenticationMethod = "authentication-method"
+	accountFieldDefaultLocale        = "default-locale"
+	accountFieldDefaultAccountType   = "default-account-type"
+	accountFieldDefaultCurrency      = "default-currency"
+	accountFieldCustomFields         = "custom-fields"
 )
 
 type userBuilder struct {
@@ -243,6 +255,47 @@ func newCreateUserRequest(accountInfo *v2.AccountInfo) (*client.CreateUserReques
 	profileString := func(key string) string {
 		return profileFields[key].GetStringValue()
 	}
+	profileBool := func(key string) *bool {
+		value, ok := profileFields[key]
+		if !ok || value.GetKind() == nil {
+			return nil
+		}
+		v := value.GetBoolValue()
+		return &v
+	}
+	profileInt := func(key string) *int {
+		value, ok := profileFields[key]
+		if !ok || value.GetKind() == nil {
+			return nil
+		}
+		v := int(value.GetNumberValue())
+		return &v
+	}
+	profileMap := func(key string) map[string]any {
+		value, ok := profileFields[key]
+		if !ok || value.GetStructValue() == nil {
+			return nil
+		}
+		return value.GetStructValue().AsMap()
+	}
+	userReference := func(login string) *client.UserReference {
+		if login == "" {
+			return nil
+		}
+		return &client.UserReference{Login: login}
+	}
+	namedReference := func(name string) *client.NamedReference {
+		if name == "" {
+			return nil
+		}
+		return &client.NamedReference{Name: name}
+	}
+	currencyReference := func(code string) *client.CurrencyReference {
+		if code == "" {
+			return nil
+		}
+		return &client.CurrencyReference{Code: code}
+	}
 	// login and email choose between a mapped value and the C1 fallback, so a
 	// whitespace-only mapping has to read as unset rather than as an identifier.
 	profileIdentifier := func(key string) string {
@@ -266,11 +319,23 @@ func newCreateUserRequest(accountInfo *v2.AccountInfo) (*client.CreateUserReques
 	}
 
 	return &client.CreateUserRequest{
-		Login:     login,
-		Email:     email,
-		Firstname: profileString(accountFieldFirstname),
-		Lastname:  profileString(accountFieldLastname),
-		Active:    true,
+		Login:                login,
+		Email:                email,
+		Firstname:            profileString(accountFieldFirstname),
+		Lastname:             profileString(accountFieldLastname),
+		Active:               true,
+		SSOIdentifier:        profileString(accountFieldSSOIdentifier),
+		EmployeeNumber:       profileString(accountFieldEmployeeNumber),
+		Manager:              userReference(profileString(accountFieldManagerLogin)),
+		PurchasingUser:       profileBool(accountFieldPurchasingUser),
+		InvoicingUser:        profileBool(accountFieldInvoicingUser),
+		SourcingUser:         profileBool(accountFieldSourcingUser),
+		AccountSecurityType:  profileInt(accountFieldAccountSecurityType),
+		AuthenticationMethod: profileString(accountFieldAuthenticationMethod),
+		DefaultLocale:        profileString(accountFieldDefaultLocale),
+		DefaultAccountType:   namedReference(profileString(accountFieldDefaultAccountType)),
+		DefaultCurrency:      currencyReference(profileString(accountFieldDefaultCurrency)),
+		CustomFields:         profileMap(accountFieldCustomFields),
 	}, nil
 }
 

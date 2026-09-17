@@ -60,6 +60,10 @@ and add the `core.accounting.read` scope to your Coupa OAuth client.
 
 Grant, revoke and account creation require the `--provisioning` flag (`BATON_PROVISIONING`).
 
+Account creation supports names, email and login, SSO and employee identifiers, manager login,
+Purchasing/Invoicing/Sourcing license flags, account security and authentication settings,
+locale, default account type and currency, and instance-specific custom fields.
+
 # Actions
 
 `baton-coupa` supports the following actions on user accounts:

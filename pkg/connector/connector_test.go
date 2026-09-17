@@ -19,7 +19,13 @@ func TestMetadataAccountCreationSchema(t *testing.T) {
 
 	fieldMap := metadata.GetAccountCreationSchema().GetFieldMap()
 	require.ElementsMatch(t,
-		[]string{accountFieldFirstname, accountFieldLastname, accountFieldEmail, accountFieldLogin},
+		[]string{
+			accountFieldFirstname, accountFieldLastname, accountFieldEmail, accountFieldLogin,
+			accountFieldSSOIdentifier, accountFieldEmployeeNumber, accountFieldManagerLogin,
+			accountFieldPurchasingUser, accountFieldInvoicingUser, accountFieldSourcingUser,
+			accountFieldAccountSecurityType, accountFieldAuthenticationMethod, accountFieldDefaultLocale,
+			accountFieldDefaultAccountType, accountFieldDefaultCurrency, accountFieldCustomFields,
+		},
 		slices.Collect(maps.Keys(fieldMap)),
 	)
 
@@ -27,7 +33,7 @@ func TestMetadataAccountCreationSchema(t *testing.T) {
 	for key, field := range fieldMap {
 		require.NotEmpty(t, field.GetDisplayName(), "field %s is missing a display name", key)
 		require.NotEmpty(t, field.GetDescription(), "field %s is missing a description", key)
-		require.NotNil(t, field.GetStringField(), "field %s is not a string field", key)
+		require.True(t, field.GetStringField() != nil || field.GetBoolField() != nil || field.GetIntField() != nil || field.GetMapField() != nil, "field %s has no supported type", key)
 
 		require.NotContains(t, orders, field.GetOrder(), "field %s reuses an order", key)
 		orders[field.GetOrder()] = key

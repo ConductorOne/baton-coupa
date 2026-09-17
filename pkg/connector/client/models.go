@@ -185,11 +185,35 @@ type UpdateUserResponse struct {
 // CreateUserRequest represents the request body for creating a user in Coupa.
 // Reference: https://compass.coupa.com/en-us/products/product-documentation/integration-technical-documentation/the-coupa-core-api/resources/reference-data-resources/users-api-(users)
 type CreateUserRequest struct {
-	Login     string `json:"login"`
-	Email     string `json:"email"`
-	Firstname string `json:"firstname,omitempty"`
-	Lastname  string `json:"lastname,omitempty"`
-	Active    bool   `json:"active"`
+	Login                string             `json:"login"`
+	Email                string             `json:"email"`
+	Firstname            string             `json:"firstname,omitempty"`
+	Lastname             string             `json:"lastname,omitempty"`
+	Active               bool               `json:"active"`
+	SSOIdentifier        string             `json:"sso-identifier,omitempty"`
+	EmployeeNumber       string             `json:"employee-number,omitempty"`
+	Manager              *UserReference     `json:"manager,omitempty"`
+	PurchasingUser       *bool              `json:"purchasing-user,omitempty"`
+	InvoicingUser        *bool              `json:"invoicing_user,omitempty"`
+	SourcingUser         *bool              `json:"sourcing-user,omitempty"`
+	AccountSecurityType  *int               `json:"account-security-type,omitempty"`
+	AuthenticationMethod string             `json:"authentication-method,omitempty"`
+	DefaultLocale        string             `json:"default-locale,omitempty"`
+	DefaultAccountType   *NamedReference    `json:"default-account-type,omitempty"`
+	DefaultCurrency      *CurrencyReference `json:"default-currency,omitempty"`
+	CustomFields         map[string]any     `json:"custom-fields,omitempty"`
+}
+
+type UserReference struct {
+	Login string `json:"login,omitempty"`
+}
+
+type NamedReference struct {
+	Name string `json:"name,omitempty"`
+}
+
+type CurrencyReference struct {
+	Code string `json:"code,omitempty"`
 }
 
 // CreateUserResponse represents the response from creating a user in Coupa.
