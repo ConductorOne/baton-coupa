@@ -1,6 +1,7 @@
 package connector
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/conductorone/baton-coupa/pkg/connector/client"
@@ -27,6 +28,51 @@ func TestNewCreateUserRequest(t *testing.T) {
 		expected    *client.CreateUserRequest
 		expectedErr string
 	}{
+		{
+			name: "extended and custom fields",
+			accountInfo: &v2.AccountInfo{
+				Login:  "john.doe",
+				Emails: []*v2.AccountInfo_Email{{Address: "john@example.com", IsPrimary: true}},
+				Profile: profile(t, map[string]any{
+					"sso-identifier": "john-sso", "employee-number": "E123", "manager.login": "jane.manager",
+					"purchasing-user": true, "invoicing-user": false, "sourcing-user": true,
+					"account-security-type": 2, "authentication-method": "saml", "default-locale": "en-GB",
+					"default-account-type": "Corporate", "default-currency": "GBP",
+					"custom-fields": map[string]any{"custom-department-code": "ENG", "custom-enabled": true},
+				}),
+			},
+			expected: &client.CreateUserRequest{
+				Login: "john.doe", Email: "john@example.com", Active: true,
+				SSOIdentifier: "john-sso", EmployeeNumber: "E123", Manager: &client.UserReference{Login: "jane.manager"},
+				PurchasingUser: boolPointer(true), InvoicingUser: boolPointer(false), SourcingUser: boolPointer(true),
+				AccountSecurityType: intPointer(2), AuthenticationMethod: "saml", DefaultLocale: "en-GB",
+				DefaultAccountType: &client.NamedReference{Name: "Corporate"}, DefaultCurrency: &client.CurrencyReference{Code: "GBP"},
+				CustomFields: map[string]any{"custom-department-code": "ENG", "custom-enabled": true},
+			},
+		},
+		{
+			name: "null and wrong-kind optional fields are omitted",
+			accountInfo: &v2.AccountInfo{
+				Login:  "john.doe",
+				Emails: []*v2.AccountInfo_Email{{Address: "john@example.com", IsPrimary: true}},
+				Profile: profile(t, map[string]any{
+					"sso-identifier":        "   ",
+					"employee-number":       "\t",
+					"purchasing-user":       nil,
+					"invoicing-user":        "false",
+					"sourcing-user":         1,
+					"account-security-type": "2",
+					"authentication-method": "  ",
+					"default-locale":        "\n",
+					"manager.login":         "   ",
+					"default-account-type":  "\t",
+					"default-currency":      "  ",
+				}),
+			},
+			expected: &client.CreateUserRequest{
+				Login: "john.doe", Email: "john@example.com", Active: true,
+			},
+		},
 		{
 			name:        "nil account info",
 			accountInfo: nil,
@@ -180,4 +226,25 @@ func TestNewCreateUserRequest(t *testing.T) {
 			require.Equal(t, test.expected, got)
 		})
 	}
+}
+
+func boolPointer(value bool) *bool { return &value }
+func intPointer(value int) *int    { return &value }
+
+func TestCreateUserRequestMarshalJSON(t *testing.T) {
+	req := client.CreateUserRequest{
+		Login: "john", Email: "john@example.com", Active: true,
+		Manager: &client.UserReference{Login: "manager"}, InvoicingUser: boolPointer(false),
+		CustomFields: map[string]any{"custom-one": "value"},
+	}
+	data, err := json.Marshal(req)
+	require.NoError(t, err)
+	var payload map[string]any
+	require.NoError(t, json.Unmarshal(data, &payload))
+	require.Equal(t, "john", payload["login"])
+	require.Equal(t, true, payload["active"])
+	require.Equal(t, false, payload["invoicing-user"])
+	require.Equal(t, map[string]any{"custom-one": "value"}, payload["custom-fields"])
+	require.Equal(t, map[string]any{"login": "manager"}, payload["manager"])
+	require.NotContains(t, payload, "default-currency")
 }

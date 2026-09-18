@@ -1,0 +1,222 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Coupa API surface used by baton-coupa",
+    "version": "1.0.0",
+    "description": "Connector-scoped contract derived from baton-coupa client request sites and Coupa API documentation, accessed 2026-09-17.",
+    "license": { "name": "Apache License 2.0", "identifier": "Apache-2.0" }
+  },
+  "servers": [
+    {
+      "url": "https://{tenant}.coupacloud.com",
+      "variables": { "tenant": { "default": "example" } }
+    }
+  ],
+  "paths": {
+    "/oauth2/token": {
+      "post": {
+        "summary": "Obtain an OAuth token",
+        "operationId": "getOAuthToken",
+        "description": "OAuth 2.0 client-credentials token exchange performed by golang.org/x/oauth2.",
+        "security": [{ "clientCredentials": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": ["grant_type"],
+                "properties": {
+                  "grant_type": { "type": "string", "const": "client_credentials" },
+                  "scope": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OAuth token",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OAuthToken" } } }
+          },
+          "4XX": { "$ref": "#/components/responses/ClientError" }
+        }
+      }
+    },
+    "/api/graphql": {
+      "post": {
+        "summary": "Run a Coupa GraphQL query",
+        "operationId": "queryCoupa",
+        "description": "Runs the connector's user, group, role, license, account-group, and content-group read queries. The data object varies with the submitted query.",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/GraphQLRequest" } } }
+        },
+        "responses": {
+          "200": {
+            "description": "GraphQL envelope",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/GraphQLResponse" } } }
+          },
+          "4XX": { "$ref": "#/components/responses/ClientError" }
+        }
+      }
+    },
+    "/api/users": {
+      "post": {
+        "summary": "Create a Coupa user",
+        "operationId": "createUser",
+        "description": "Creates a Coupa user. Source: Coupa Users API and Custom Field Namespace documentation, accessed 2026-09-17.",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateUserRequest" } } }
+        },
+        "responses": {
+          "201": {
+            "description": "Created user",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/User" } } }
+          },
+          "4XX": { "$ref": "#/components/responses/ClientError" }
+        }
+      }
+    },
+    "/api/users/{user_id}": {
+      "put": {
+        "summary": "Update a Coupa user",
+        "operationId": "updateUser",
+        "description": "Updates status, roles, user groups, licenses, account groups, or content groups. The fields query parameter selects the response projection.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "user_id", "in": "path", "required": true, "schema": { "type": "integer" } },
+          { "name": "fields", "in": "query", "required": false, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateUserRequest" } } }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated user projection",
+            "content": { "application/json": { "schema": { "type": "object", "additionalProperties": true } } }
+          },
+          "4XX": { "$ref": "#/components/responses/ClientError" }
+        }
+      }
+    }
+  },
+  "components": {
+    "responses": {
+      "ClientError": {
+        "description": "Coupa rejected the request",
+        "content": {
+          "application/json": {
+            "schema": { "type": "object", "additionalProperties": true }
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": { "type": "http", "scheme": "bearer" },
+      "clientCredentials": { "type": "http", "scheme": "basic" }
+    },
+    "schemas": {
+      "OAuthToken": {
+        "type": "object",
+        "properties": {
+          "access_token": { "type": "string" },
+          "token_type": { "type": "string" },
+          "expires_in": { "type": "integer" }
+        }
+      },
+      "GraphQLRequest": {
+        "type": "object",
+        "required": ["query"],
+        "properties": {
+          "query": { "type": "string" },
+          "variables": { "type": "object", "additionalProperties": { "type": "string" } }
+        }
+      },
+      "GraphQLResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "type": ["object", "null"], "additionalProperties": true },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": { "message": { "type": "string" } }
+            }
+          }
+        }
+      },
+      "UserReference": {
+        "type": "object",
+        "properties": { "login": { "type": "string" } }
+      },
+      "NamedReference": {
+        "type": "object",
+        "properties": { "name": { "type": "string" } }
+      },
+      "CurrencyReference": {
+        "type": "object",
+        "properties": { "code": { "type": "string" } }
+      },
+      "CreateUserRequest": {
+        "type": "object",
+        "required": ["login", "email", "active"],
+        "properties": {
+          "login": { "type": "string", "maxLength": 255 },
+          "email": { "type": "string", "format": "email", "maxLength": 255 },
+          "firstname": { "type": "string", "maxLength": 40 },
+          "lastname": { "type": "string", "maxLength": 40 },
+          "active": { "type": "boolean" },
+          "sso-identifier": { "type": "string", "maxLength": 255 },
+          "employee-number": { "type": "string", "maxLength": 255 },
+          "manager": { "$ref": "#/components/schemas/UserReference" },
+          "purchasing-user": { "type": "boolean" },
+          "invoicing-user": { "type": "boolean" },
+          "sourcing-user": { "type": "boolean" },
+          "account-security-type": { "type": "integer" },
+          "authentication-method": { "type": "string", "enum": ["coupa_credentials", "ldap", "saml"] },
+          "default-locale": { "type": "string", "maxLength": 10 },
+          "default-account-type": { "$ref": "#/components/schemas/NamedReference" },
+          "default-currency": { "$ref": "#/components/schemas/CurrencyReference" },
+          "custom-fields": { "type": "object", "additionalProperties": true }
+        }
+      },
+      "UpdateUserRequest": {
+        "type": "object",
+        "description": "Union of update payloads emitted by the connector.",
+        "properties": {
+          "active": { "type": "boolean" },
+          "roles": { "$ref": "#/components/schemas/ResourceIdList" },
+          "user-groups": { "$ref": "#/components/schemas/ResourceIdList" },
+          "account-groups": { "$ref": "#/components/schemas/ResourceIdList" },
+          "content-groups": { "$ref": "#/components/schemas/ResourceIdList" }
+        },
+        "additionalProperties": { "type": "boolean" }
+      },
+      "ResourceIdList": {
+        "type": ["array", "null"],
+        "items": {
+          "type": "object",
+          "required": ["id"],
+          "properties": { "id": { "type": "integer" } }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "login": { "type": "string" },
+          "email": { "type": "string" },
+          "firstname": { "type": "string" },
+          "lastname": { "type": "string" },
+          "fullname": { "type": "string" },
+          "active": { "type": "boolean" }
+        }
+      }
+    }
+  }
+}
