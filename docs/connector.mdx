@@ -54,6 +54,14 @@ Accounts are created active. The connector does not set a password.
 
 Custom fields are sent in Coupa's `custom-fields` namespace. License assignments can also be managed after account creation through C1 License Management.
 
+The connector trims surrounding whitespace from **Email**, **Login**, **SSO identifier**, **Employee number**, **Manager login**, **Authentication method**, **Default locale**, **Default account type**, and **Default currency**. A value that is only whitespace counts as unmapped. **First name** and **Last name** are sent as-is.
+
+**Purchasing user**, **Invoicing user**, and **Sourcing user** must be mapped to boolean values, and **Account security type** to a number. A value of any other type, such as the text `"false"`, is ignored and not sent to Coupa. Custom field values are sent with the type they are mapped with.
+
+<Note>
+The extended attributes are set only when the account is created. The connector does not update SSO identifier, employee number, manager, security and authentication settings, locale, default account type, default currency, or custom fields on existing Coupa users. It also does not sync these attributes back into C1: synced Coupa accounts carry only login, email, name, and status.
+</Note>
+
 ### Connector actions
 
 Connector actions are custom capabilities that extend C1 automations with app-specific operations. You can use connector actions in the [Perform connector action](/product/admin/automations-steps-reference#perform-connector-action) automation step.
